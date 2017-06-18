@@ -2,7 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.michalgoly.mapify.ui.MapFragment">
+    tools:context="com.michalgoly.mapify.ui.MapFragment"
+    android:background="@color/colorAccentDark">
 
     <!-- TODO: Update blank fragment layout -->
     <TextView

@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
+    private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
 
     private BottomNavigationView bottomNavigationView = null;
     private int bottomItemId = -1;
@@ -58,6 +59,10 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
             if (accessToken != null) {
                 Config config = new Config(this, accessToken, getString(R.string.spotify_client_id));
                 setPlayer(config);
+            }
+            bottomItemId = savedInstanceState.getInt(KEY_BOTTOM_MENU_ID);
+            if (bottomItemId != -1) {
+                selectFragment(bottomItemId);
             }
         } else {
             Fragment fragment = null;
@@ -87,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     public void onSaveInstanceState(Bundle savedInstanceState) {
         Log.i(TAG, "onSaveInstanceState saving accessToken: " + accessToken);
         savedInstanceState.putString(KEY_ACCESS_TOKEN, accessToken);
+        savedInstanceState.putInt(KEY_BOTTOM_MENU_ID, bottomItemId);
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -207,8 +213,6 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
                 return true;
             }
         });
-        FrameLayout content = (FrameLayout) findViewById(R.id.fl_content);
-        content.setBackgroundColor(getResources().getColor(R.color.colorAccent));
     }
 
     private void selectFragment(int menuItemId) {
