@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import com.michalgoly.mapify.R;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
@@ -17,6 +19,8 @@ import com.spotify.sdk.android.authentication.LoginActivity;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Error;
+import com.spotify.sdk.android.player.Metadata;
+import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
@@ -25,25 +29,38 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         ConnectionStateCallback {
 
     private static final String TAG = "MainActivity";
-
     private static final int REQUEST_INTERNET = 0;
 
-    private SpotifyPlayer player = null;
+    private Button playButton = null;
+
+    private static SpotifyPlayer player = null;
+    private static PlaybackState playbackState = null;
+    private static Metadata metadata = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (internetPermissionGranted()) {
+        if (!isLoggedIn() && internetPermissionGranted()) {
             authenticateSpotify();
+        } else {
+            player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
         }
+        playButton = (Button) findViewById(R.id.btn_play);
+        playButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
+            }
+        });
     }
 
     @Override
     public void onLoggedIn() {
         Log.d(TAG, "User logged in to Spotify");
-        player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
+//        player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
     }
 
     @Override
@@ -75,11 +92,8 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     @Override
     public void onPlaybackEvent(PlayerEvent playerEvent) {
         Log.d(TAG, "Playback event received: " + playerEvent.name());
-        switch (playerEvent) {
-            // Handle event type as necessary
-            default:
-                break;
-        }
+        playbackState = player.getPlaybackState();
+        metadata = player.getMetadata();
     }
 
     @Override
@@ -167,5 +181,9 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         builder.setScopes(new String[] {"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, LoginActivity.REQUEST_CODE, request);
+    }
+
+    private boolean isLoggedIn() {
+        return player != null && player.isLoggedIn();
     }
 }
