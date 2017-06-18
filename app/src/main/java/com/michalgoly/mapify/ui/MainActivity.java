@@ -5,11 +5,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
+import android.view.MenuItem;
+import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.michalgoly.mapify.R;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
@@ -31,6 +34,9 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
 
+    private BottomNavigationView bottomNavigationView = null;
+    private int selectedItem = -1;
+
     private static SpotifyPlayer player = null;
     private static PlaybackState playbackState = null;
     private static Metadata metadata = null;
@@ -45,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         } else {
             player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
         }
+
+        initUi(savedInstanceState);
     }
 
     @Override
@@ -151,6 +159,25 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
                 finishAffinity();
                 break;
         }
+    }
+
+    private void initUi(Bundle savedInstanceState) {
+        bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_nav);
+        bottomNavigationView.setOnNavigationItemSelectedListener(
+                new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                selectFragment(item);
+                return true;
+            }
+        });
+        FrameLayout content = (FrameLayout) findViewById(R.id.fl_content);
+        content.setBackgroundColor(getResources().getColor(R.color.colorAccent));
+    }
+
+    private void selectFragment(MenuItem menuItem) {
+        Toast.makeText(this, "Menu item: " + menuItem.getTitle(), Toast.LENGTH_SHORT).show();
     }
 
     private boolean internetPermissionGranted() {
