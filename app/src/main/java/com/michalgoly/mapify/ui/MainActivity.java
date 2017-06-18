@@ -31,8 +31,6 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
 
-    private Button playButton = null;
-
     private static SpotifyPlayer player = null;
     private static PlaybackState playbackState = null;
     private static Metadata metadata = null;
@@ -47,14 +45,6 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         } else {
             player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
         }
-        playButton = (Button) findViewById(R.id.btn_play);
-        playButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
-            }
-        });
     }
 
     @Override
