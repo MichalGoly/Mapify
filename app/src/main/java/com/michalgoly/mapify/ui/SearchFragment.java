@@ -7,31 +7,23 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.michalgoly.mapify.R;
+import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link SearchFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link SearchFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class SearchFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private static final String TAG = "SearchFragment";
 
     private Toolbar toolbar = null;
+    private MaterialSearchView materialSearchView = null;
 
     private OnFragmentInteractionListener mListener;
 
@@ -42,17 +34,11 @@ public class SearchFragment extends Fragment {
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment SearchFragment.
      */
-    // TODO: Rename and change types and number of parameters
-    public static SearchFragment newInstance(String param1, String param2) {
+    public static SearchFragment newInstance() {
         SearchFragment fragment = new SearchFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+//        args.putString(ARG_PARAM1, param1);
         fragment.setArguments(args);
         return fragment;
     }
@@ -61,8 +47,7 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+//            mParam1 = getArguments().getString(ARG_PARAM1);
         }
     }
 
@@ -74,6 +59,37 @@ public class SearchFragment extends Fragment {
         toolbar.setTitle(getString(R.string.toolbar_title));
         toolbar.setTitleTextColor(Color.WHITE);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+
+        materialSearchView = (MaterialSearchView) view.findViewById(R.id.tb_search_view);
+        materialSearchView.setSuggestions(getResources().getStringArray(R.array.search_suggestions));
+//     TODO   materialSearchView.setVoiceSearch(true);
+        materialSearchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
+
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Log.d(TAG, "onQueryTextSubmit called with query: " + query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                Log.d(TAG, "onQueryTextChange called with newText: " + newText);
+                return false;
+            }
+        });
+        materialSearchView.setOnSearchViewListener(new MaterialSearchView.SearchViewListener() {
+
+            @Override
+            public void onSearchViewShown() {
+                Log.d(TAG, "onSearchViewShown called");
+            }
+
+            @Override
+            public void onSearchViewClosed() {
+                Log.d(TAG, "onSearchViewClosed");
+            }
+        });
+        setHasOptionsMenu(true);
         return view;
     }
 
@@ -99,6 +115,14 @@ public class SearchFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.tb_search_menu, menu);
+        MenuItem item = menu.findItem(R.id.tb_action_search);
+        materialSearchView.setMenuItem(item);
+        super.onCreateOptionsMenu(menu,inflater);
     }
 
     /**
