@@ -64,15 +64,6 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
             if (bottomItemId != -1) {
                 selectFragment(bottomItemId);
             }
-        } else {
-            Fragment fragment = null;
-            Class fragmentClass = SearchFragment.class;
-            try {
-                fragment = (Fragment) fragmentClass.newInstance();
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to instantiate the SearchFragment", e);
-            }
-            getSupportFragmentManager().beginTransaction().replace(R.id.fl_content, fragment).commit();
         }
 
         if (!isLoggedIn() && internetPermissionGranted()) {
@@ -162,6 +153,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
                             player = spotifyPlayer;
                             player.addConnectionStateCallback(MainActivity.this);
                             player.addNotificationCallback(MainActivity.this);
+                            startSearchFragment();
                         }
 
                         @Override
@@ -277,6 +269,16 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         builder.setScopes(new String[] {"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, LoginActivity.REQUEST_CODE, request);
+    }
+
+    private void startSearchFragment() {
+        Fragment fragment = null;
+        try {
+            fragment = SearchFragment.newInstance(accessToken);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to instantiate the SearchFragment", e);
+        }
+        getSupportFragmentManager().beginTransaction().replace(R.id.fl_content, fragment).commit();
     }
 
     private boolean isLoggedIn() {

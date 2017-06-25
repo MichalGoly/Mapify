@@ -17,15 +17,23 @@ import android.view.ViewGroup;
 
 import com.michalgoly.mapify.R;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
+import com.spotify.sdk.android.player.Config;
+import com.spotify.sdk.android.player.ConnectionStateCallback;
+import com.spotify.sdk.android.player.Error;
+import com.spotify.sdk.android.player.PlayerEvent;
+import com.spotify.sdk.android.player.Spotify;
+import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class SearchFragment extends Fragment {
+public class SearchFragment extends Fragment implements SpotifyPlayer.NotificationCallback, ConnectionStateCallback {
 
     private static final String TAG = "SearchFragment";
+    private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
 
     private Toolbar toolbar = null;
     private MaterialSearchView materialSearchView = null;
 
-    private OnFragmentInteractionListener mListener;
+    private SpotifyPlayer player = null;
+    private OnFragmentInteractionListener mListener = null;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -35,10 +43,10 @@ public class SearchFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      */
-    public static SearchFragment newInstance() {
+    public static SearchFragment newInstance(String accessToken) {
         SearchFragment fragment = new SearchFragment();
         Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
+        args.putString(KEY_ACCESS_TOKEN, accessToken);
         fragment.setArguments(args);
         return fragment;
     }
@@ -47,7 +55,10 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
+            String accessToken = getArguments().getString(KEY_ACCESS_TOKEN);
+            Log.i(TAG, "Access token inside the SearchFragment " + accessToken);
+            Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
+            setPlayer(config);
         }
     }
 
@@ -61,14 +72,14 @@ public class SearchFragment extends Fragment {
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         materialSearchView = (MaterialSearchView) view.findViewById(R.id.tb_search_view);
-        materialSearchView.setSuggestions(getResources().getStringArray(R.array.search_suggestions));
+//        materialSearchView.setSuggestions(getResources().getStringArray(R.array.search_suggestions));
 //     TODO   materialSearchView.setVoiceSearch(true);
         materialSearchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
 
             @Override
             public boolean onQueryTextSubmit(String query) {
                 Log.d(TAG, "onQueryTextSubmit called with query: " + query);
-                return false;
+                return true;
             }
 
             @Override
@@ -123,6 +134,59 @@ public class SearchFragment extends Fragment {
         MenuItem item = menu.findItem(R.id.tb_action_search);
         materialSearchView.setMenuItem(item);
         super.onCreateOptionsMenu(menu,inflater);
+    }
+
+    private void setPlayer(Config config) {
+        Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
+
+            @Override
+            public void onInitialized(SpotifyPlayer spotifyPlayer) {
+                player = spotifyPlayer;
+                player.addConnectionStateCallback(SearchFragment.this);
+                player.addNotificationCallback(SearchFragment.this);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                Log.e(TAG, "Failed to initialise the Spotify player inside the SearchFragment", throwable);
+                getActivity().finishAffinity();
+            }
+        });
+    }
+
+    @Override
+    public void onLoggedIn() {
+        Log.d(TAG, "onLoggedIn");
+    }
+
+    @Override
+    public void onLoggedOut() {
+        Log.d(TAG, "onLoggedOut");
+    }
+
+    @Override
+    public void onLoginFailed(Error error) {
+        Log.d(TAG, "onLoginFailed");
+    }
+
+    @Override
+    public void onTemporaryError() {
+        Log.d(TAG, "onTemporaryError");
+    }
+
+    @Override
+    public void onConnectionMessage(String s) {
+        Log.d(TAG, "onConnectionMessage");
+    }
+
+    @Override
+    public void onPlaybackEvent(PlayerEvent playerEvent) {
+        Log.d(TAG, "onPlaybackEvent");
+    }
+
+    @Override
+    public void onPlaybackError(Error error) {
+        Log.d(TAG, "onPlaybackError: " + error.toString());
     }
 
     /**
