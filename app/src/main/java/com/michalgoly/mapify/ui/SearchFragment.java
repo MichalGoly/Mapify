@@ -3,11 +3,13 @@ package com.michalgoly.mapify.ui;
 import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.StringBuilderPrinter;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -24,7 +26,14 @@ import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class SearchFragment extends Fragment implements SpotifyPlayer.NotificationCallback, ConnectionStateCallback {
+import kaaes.spotify.webapi.android.SpotifyApi;
+import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.Track;
+import kaaes.spotify.webapi.android.models.Tracks;
+import kaaes.spotify.webapi.android.models.TracksPager;
+
+public class SearchFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
+        ConnectionStateCallback {
 
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
@@ -33,6 +42,9 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
     private MaterialSearchView materialSearchView = null;
 
     private SpotifyPlayer player = null;
+    private String accessToken = null;
+    private SpotifyApi spotifyApi = null;
+    private SpotifyService spotifyService = null;
     private OnFragmentInteractionListener mListener = null;
 
     public SearchFragment() {
@@ -55,11 +67,21 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            String accessToken = getArguments().getString(KEY_ACCESS_TOKEN);
+            accessToken = getArguments().getString(KEY_ACCESS_TOKEN);
             Log.i(TAG, "Access token inside the SearchFragment " + accessToken);
             Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
             setPlayer(config);
+
+            spotifyApi = new SpotifyApi();
+            spotifyApi.setAccessToken(accessToken);
+            spotifyService = spotifyApi.getService();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        bundle.putString(KEY_ACCESS_TOKEN, accessToken);
     }
 
     @Override
@@ -79,7 +101,8 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
             @Override
             public boolean onQueryTextSubmit(String query) {
                 Log.d(TAG, "onQueryTextSubmit called with query: " + query);
-                return true;
+                new TracksTask().execute(query);
+                return false;
             }
 
             @Override
@@ -202,5 +225,24 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    private class TracksTask extends AsyncTask<String, Void, TracksPager> {
+
+        @Override
+        protected TracksPager doInBackground(String... query) {
+            return spotifyService.searchTracks(query[0]);
+        }
+
+        @Override
+        protected void onPostExecute(TracksPager tracksPager) {
+            if (tracksPager != null) {
+                for (Track t : tracksPager.tracks.items)
+                    Log.d(TAG, "id: " + t.id + ", name: " + t.name);
+            } else {
+                Log.d(TAG, "tracks was null");
+            }
+        }
+
     }
 }
