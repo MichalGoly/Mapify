@@ -7,6 +7,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.StringBuilderPrinter;
@@ -16,6 +18,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
@@ -26,8 +29,12 @@ import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.ArtistSimple;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import kaaes.spotify.webapi.android.models.TracksPager;
@@ -40,6 +47,9 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
 
     private Toolbar toolbar = null;
     private MaterialSearchView materialSearchView = null;
+    private RecyclerView recyclerView = null;
+    private RecyclerView.Adapter recyclerViewAdaper = null;
+    private List<TrackWrapper> searchedTracks = null;
 
     private SpotifyPlayer player = null;
     private String accessToken = null;
@@ -85,17 +95,19 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
         toolbar = (Toolbar) view.findViewById(R.id.tb_search_fragment);
         toolbar.setTitle(getString(R.string.toolbar_title));
         toolbar.setTitleTextColor(Color.WHITE);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
+        recyclerView = (RecyclerView) view.findViewById(R.id.rv_search);
+        recyclerViewAdaper = new TracksAdapter();
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(recyclerViewAdaper);
+
         materialSearchView = (MaterialSearchView) view.findViewById(R.id.tb_search_view);
-//        materialSearchView.setSuggestions(getResources().getStringArray(R.array.search_suggestions));
-//     TODO   materialSearchView.setVoiceSearch(true);
         materialSearchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
 
             @Override
@@ -227,6 +239,61 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
         void onFragmentInteraction(Uri uri);
     }
 
+    private class TracksAdapter extends RecyclerView.Adapter<TracksView> {
+
+        private final LayoutInflater inflater;
+
+        public TracksAdapter() {
+            inflater = LayoutInflater.from(getContext());
+        }
+
+        @Override
+        public TracksView onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = inflater.inflate(R.layout.search_row, parent, false);
+            TracksView tracksView = new TracksView(view);
+            return tracksView;
+        }
+
+        @Override
+        public void onBindViewHolder(TracksView holder, int position) {
+            if (searchedTracks != null) {
+                holder.title.setText(searchedTracks.get(position).title);
+                holder.artists.setText(searchedTracks.get(position).artists);
+            } else {
+                Log.d(TAG, "searchedTrack was null in onBindViewHolder");
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return searchedTracks == null ? 0 : searchedTracks.size();
+        }
+    }
+
+    private class TracksView extends RecyclerView.ViewHolder {
+
+        private TextView title = null;
+        private TextView artists = null;
+
+        public TracksView(View v) {
+            super(v);
+            this.title = (TextView) v.findViewById(R.id.tv_row_title);
+            this.artists = (TextView) v.findViewById(R.id.tv_row_artists);
+        }
+    }
+
+    private class TrackWrapper {
+        private String title = null;
+        private String artists = null;
+        private String id = null;
+
+        public TrackWrapper(String title, String artists, String id) {
+            this.title = title;
+            this.artists = artists;
+            this.id = id;
+        }
+    }
+
     private class TracksTask extends AsyncTask<String, Void, TracksPager> {
 
         @Override
@@ -237,8 +304,19 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
         @Override
         protected void onPostExecute(TracksPager tracksPager) {
             if (tracksPager != null) {
-                for (Track t : tracksPager.tracks.items)
+                searchedTracks = new ArrayList<>();
+                for (Track t : tracksPager.tracks.items) {
                     Log.d(TAG, "id: " + t.id + ", name: " + t.name);
+                    String artists = "";
+                    for (int i = 0; i < t.artists.size(); i++) {
+                        if (i + 1 == t.artists.size())
+                            artists += t.artists.get(i).name;
+                        else
+                            artists += t.artists.get(i).name + ", ";
+                    }
+                    searchedTracks.add(new TrackWrapper(t.name, artists, t.id));
+                }
+                recyclerViewAdaper.notifyDataSetChanged();
             } else {
                 Log.d(TAG, "tracks was null");
             }
