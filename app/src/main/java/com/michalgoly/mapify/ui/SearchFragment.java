@@ -115,7 +115,7 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
             @Override
             public boolean onQueryTextSubmit(String query) {
                 Log.d(TAG, "onQueryTextSubmit called with query: " + query);
-                new TracksTask().execute(query);
+                new TracksTask().execute(query.trim());
                 return false;
             }
 

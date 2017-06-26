@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
                 finishAffinity();
             }
 //            player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
+
         }
 
         initUi(savedInstanceState);
@@ -209,25 +210,22 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
 
     private void selectFragment(int menuItemId) {
         Fragment fragment = null;
-        Class fragmentClass = null;
         switch (menuItemId) {
             case R.id.bottom_menu_search:
-                fragmentClass = SearchFragment.class;
+                if (accessToken != null)
+                 fragment = SearchFragment.newInstance(accessToken);
+                else
+                 Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
-                fragmentClass = PlayerFragment.class;
+                fragment = PlayerFragment.newInstance();
                 break;
             case R.id.bottom_menu_map:
-                fragmentClass = MapFragment.class;
+                fragment = MapFragment.newInstance();
                 break;
             default:
-                fragmentClass = SearchFragment.class;
+                Log.wtf(TAG, "Should never happen");
                 break;
-        }
-        try {
-            fragment = (Fragment) fragmentClass.newInstance();
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to instantiate the fragment", e);
         }
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
