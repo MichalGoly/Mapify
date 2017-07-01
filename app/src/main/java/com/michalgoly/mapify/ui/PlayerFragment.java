@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Error;
@@ -27,11 +28,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 
     private static final String TAG = "PlayerFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
-    private static final String KEY_CURRENT_SONG_ID = "KEY_CURRENT_SONG_ID";
+    private static final String KEY_CURRENT_TRACK= "KEY_CURRENT_TRACK";
 
     private String accessToken = null;
-    private String currentSongId = null;
     private SpotifyPlayer player = null;
+    private TrackWrapper currentTrack = null;
     private PlaybackState playbackState = null;
     private Metadata metadata = null;
 
@@ -43,11 +44,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         // Required empty public constructor
     }
 
-    public static PlayerFragment newInstance(String accessToken, String currentSongId) {
+    public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
-        args.putString(KEY_CURRENT_SONG_ID, currentSongId);
+        args.putParcelable(KEY_CURRENT_TRACK, currentTrack);
         fragment.setArguments(args);
         return fragment;
     }
@@ -60,27 +61,26 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             Log.i(TAG, "Access token inside the PlayerFragment " + accessToken);
             Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
             setPlayer(config);
-            currentSongId = getArguments().getString(KEY_CURRENT_SONG_ID);
+            currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
         }
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_player, container, false);
         playButton = (Button) view.findViewById(R.id.btn_play);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (player != null && currentSongId != null) {
-                    player.playUri(null, currentSongId, 0, 0);
+                if (player != null && currentTrack != null) {
+                    player.playUri(null, currentTrack.getId(), 0, 0);
                 } else {
                     Log.d(TAG, "player or currentSongId was null!");
                 }
             }
         });
-        if (currentSongId != null && player != null) {
-            player.playUri(null, currentSongId, 0, 0);
+        if (currentTrack != null && player != null) {
+            player.playUri(null, currentTrack.getId(), 0, 0);
         }
         return view;
     }
@@ -109,7 +109,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     public void onSaveInstanceState(Bundle bundle) {
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
-        bundle.putString(KEY_CURRENT_SONG_ID, currentSongId);
+        bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
     }
 
     public void onButtonPressed(Uri uri) {
