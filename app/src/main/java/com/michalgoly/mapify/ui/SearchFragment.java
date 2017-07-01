@@ -26,12 +26,6 @@ import android.widget.TextView;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.utils.ItemClickSupport;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
-import com.spotify.sdk.android.player.Config;
-import com.spotify.sdk.android.player.ConnectionStateCallback;
-import com.spotify.sdk.android.player.Error;
-import com.spotify.sdk.android.player.PlayerEvent;
-import com.spotify.sdk.android.player.Spotify;
-import com.spotify.sdk.android.player.SpotifyPlayer;
 
 import java.util.ArrayList;
 import java.util.List;

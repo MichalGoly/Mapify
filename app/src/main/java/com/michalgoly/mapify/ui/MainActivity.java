@@ -42,9 +42,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private BottomNavigationView bottomNavigationView = null;
     private int bottomItemId = -1;
 
-//    private SpotifyPlayer player = null;
-//    private PlaybackState playbackState = null;
-//    private Metadata metadata = null;
     private String accessToken = null;
 
     @Override
@@ -55,10 +52,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         if (savedInstanceState != null) {
             Log.i(TAG, "Bundle was not null");
             accessToken = savedInstanceState.getString(KEY_ACCESS_TOKEN);
-//            if (accessToken != null) {
-//                Config config = new Config(this, accessToken, getString(R.string.spotify_client_id));
-//                setPlayer(config);
-//            }
             bottomItemId = savedInstanceState.getInt(KEY_BOTTOM_MENU_ID);
             if (bottomItemId != -1) {
                 selectFragment(bottomItemId);
@@ -71,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             if (accessToken == null) {
                 Log.w(TAG, "User did not login, exiting...");
                 finishAffinity();
-//            player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
             }
         }
 
@@ -96,23 +88,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 case TOKEN:
                     accessToken = response.getAccessToken();
                     startSearchFragment();
-//                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
-//                    Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
-//
-//                        @Override
-//                        public void onInitialized(SpotifyPlayer spotifyPlayer) {
-//                            player = spotifyPlayer;
-//                            player.addConnectionStateCallback(MainActivity.this);
-//                            player.addNotificationCallback(MainActivity.this);
-//                            startSearchFragment();
-//                        }
-//
-//                        @Override
-//                        public void onError(Throwable throwable) {
-//                            Log.e(TAG, "Failed to initialise the Spotify player", throwable);
-//                            finishAffinity();
-//                        }
-//                    });
                     break;
 
                 case ERROR:
@@ -180,24 +155,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
     }
-
-//    private void setPlayer(Config config) {
-//        Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
-//
-//            @Override
-//            public void onInitialized(SpotifyPlayer spotifyPlayer) {
-//                player = spotifyPlayer;
-//                player.addConnectionStateCallback(MainActivity.this);
-//                player.addNotificationCallback(MainActivity.this);
-//            }
-//
-//            @Override
-//            public void onError(Throwable throwable) {
-//                Log.e(TAG, "Failed to initialise the Spotify player", throwable);
-//                finishAffinity();
-//            }
-//        });
-//    }
 
     private boolean internetPermissionGranted() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
