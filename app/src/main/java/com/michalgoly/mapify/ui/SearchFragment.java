@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.michalgoly.mapify.utils.ItemClickSupport;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
@@ -104,8 +105,8 @@ public class SearchFragment extends Fragment {
 
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
-                Log.i(TAG, "Item " + position + " with id " + searchedTracks.get(position).id + " clicked");
-                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position).id);
+                Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
+                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position).getId());
                 FragmentManager fragmentManager = getFragmentManager();
                 fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
             }
@@ -143,7 +144,6 @@ public class SearchFragment extends Fragment {
         return view;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -175,19 +175,7 @@ public class SearchFragment extends Fragment {
         super.onCreateOptionsMenu(menu,inflater);
     }
 
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
@@ -209,8 +197,8 @@ public class SearchFragment extends Fragment {
         @Override
         public void onBindViewHolder(TracksView holder, int position) {
             if (searchedTracks != null) {
-                holder.title.setText(searchedTracks.get(position).title);
-                holder.artists.setText(searchedTracks.get(position).artists);
+                holder.title.setText(searchedTracks.get(position).getTitle());
+                holder.artists.setText(searchedTracks.get(position).getArtists());
             } else {
                 Log.d(TAG, "searchedTrack was null in onBindViewHolder");
             }
@@ -231,18 +219,6 @@ public class SearchFragment extends Fragment {
             super(v);
             this.title = (TextView) v.findViewById(R.id.tv_row_title);
             this.artists = (TextView) v.findViewById(R.id.tv_row_artists);
-        }
-    }
-
-    private class TrackWrapper {
-        private String title = null;
-        private String artists = null;
-        private String id = null;
-
-        public TrackWrapper(String title, String artists, String id) {
-            this.title = title;
-            this.artists = artists;
-            this.id = id;
         }
     }
 
