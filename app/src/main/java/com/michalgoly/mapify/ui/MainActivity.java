@@ -30,8 +30,7 @@ import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class MainActivity extends AppCompatActivity implements SpotifyPlayer.NotificationCallback,
-        ConnectionStateCallback, SearchFragment.OnFragmentInteractionListener,
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
         PlayerFragment.OnFragmentInteractionListener,
         MapFragment.OnFragmentInteractionListener {
 
@@ -43,9 +42,9 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     private BottomNavigationView bottomNavigationView = null;
     private int bottomItemId = -1;
 
-    private SpotifyPlayer player = null;
-    private PlaybackState playbackState = null;
-    private Metadata metadata = null;
+//    private SpotifyPlayer player = null;
+//    private PlaybackState playbackState = null;
+//    private Metadata metadata = null;
     private String accessToken = null;
 
     @Override
@@ -56,10 +55,10 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         if (savedInstanceState != null) {
             Log.i(TAG, "Bundle was not null");
             accessToken = savedInstanceState.getString(KEY_ACCESS_TOKEN);
-            if (accessToken != null) {
-                Config config = new Config(this, accessToken, getString(R.string.spotify_client_id));
-                setPlayer(config);
-            }
+//            if (accessToken != null) {
+//                Config config = new Config(this, accessToken, getString(R.string.spotify_client_id));
+//                setPlayer(config);
+//            }
             bottomItemId = savedInstanceState.getInt(KEY_BOTTOM_MENU_ID);
             if (bottomItemId != -1) {
                 selectFragment(bottomItemId);
@@ -69,12 +68,11 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         if (!isLoggedIn() && internetPermissionGranted()) {
             authenticateSpotify();
         } else {
-            if (player == null) {
+            if (accessToken == null) {
                 Log.w(TAG, "User did not login, exiting...");
                 finishAffinity();
-            }
 //            player.playUri(null, metadata.currentTrack.uri, 0, (int) metadata.currentTrack.durationMs);
-
+            }
         }
 
         initUi(savedInstanceState);
@@ -89,55 +87,6 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     }
 
     @Override
-    public void onLoggedIn() {
-        Log.d(TAG, "User logged in to Spotify");
-//        player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
-    }
-
-    @Override
-    public void onLoggedOut() {
-        Log.d(TAG, "User logged out of Spotify");
-    }
-
-    @Override
-    public void onDestroy() {
-        Spotify.destroyPlayer(this);
-        super.onDestroy();
-    }
-
-    @Override
-    public void onLoginFailed(Error error) {
-        Log.d(TAG, "User failed to log into Spotify");
-    }
-
-    @Override
-    public void onTemporaryError() {
-        Log.d(TAG, "Spotify temporary error occurred");
-    }
-
-    @Override
-    public void onConnectionMessage(String message) {
-        Log.d(TAG, "Spotify connection message received: " + message);
-    }
-
-    @Override
-    public void onPlaybackEvent(PlayerEvent playerEvent) {
-        Log.d(TAG, "Playback event received: " + playerEvent.name());
-        playbackState = player.getPlaybackState();
-        metadata = player.getMetadata();
-    }
-
-    @Override
-    public void onPlaybackError(Error error) {
-        Log.d(TAG, "Playback error received: " + error.name());
-        switch (error) {
-            // Handle error type as necessary
-            default:
-                break;
-        }
-    }
-
-    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
@@ -146,23 +95,24 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
             switch (response.getType()) {
                 case TOKEN:
                     accessToken = response.getAccessToken();
-                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
-                    Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
-
-                        @Override
-                        public void onInitialized(SpotifyPlayer spotifyPlayer) {
-                            player = spotifyPlayer;
-                            player.addConnectionStateCallback(MainActivity.this);
-                            player.addNotificationCallback(MainActivity.this);
-                            startSearchFragment();
-                        }
-
-                        @Override
-                        public void onError(Throwable throwable) {
-                            Log.e(TAG, "Failed to initialise the Spotify player", throwable);
-                            finishAffinity();
-                        }
-                    });
+                    startSearchFragment();
+//                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
+//                    Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
+//
+//                        @Override
+//                        public void onInitialized(SpotifyPlayer spotifyPlayer) {
+//                            player = spotifyPlayer;
+//                            player.addConnectionStateCallback(MainActivity.this);
+//                            player.addNotificationCallback(MainActivity.this);
+//                            startSearchFragment();
+//                        }
+//
+//                        @Override
+//                        public void onError(Throwable throwable) {
+//                            Log.e(TAG, "Failed to initialise the Spotify player", throwable);
+//                            finishAffinity();
+//                        }
+//                    });
                     break;
 
                 case ERROR:
@@ -218,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
                  Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
-                fragment = PlayerFragment.newInstance();
+                fragment = PlayerFragment.newInstance(accessToken, null); // TODO change
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -231,23 +181,23 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
     }
 
-    private void setPlayer(Config config) {
-        Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
-
-            @Override
-            public void onInitialized(SpotifyPlayer spotifyPlayer) {
-                player = spotifyPlayer;
-                player.addConnectionStateCallback(MainActivity.this);
-                player.addNotificationCallback(MainActivity.this);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                Log.e(TAG, "Failed to initialise the Spotify player", throwable);
-                finishAffinity();
-            }
-        });
-    }
+//    private void setPlayer(Config config) {
+//        Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
+//
+//            @Override
+//            public void onInitialized(SpotifyPlayer spotifyPlayer) {
+//                player = spotifyPlayer;
+//                player.addConnectionStateCallback(MainActivity.this);
+//                player.addNotificationCallback(MainActivity.this);
+//            }
+//
+//            @Override
+//            public void onError(Throwable throwable) {
+//                Log.e(TAG, "Failed to initialise the Spotify player", throwable);
+//                finishAffinity();
+//            }
+//        });
+//    }
 
     private boolean internetPermissionGranted() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
@@ -280,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
     }
 
     private boolean isLoggedIn() {
-        return player != null;
+        return accessToken != null;
     }
 
     @Override

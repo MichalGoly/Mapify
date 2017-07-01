@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -40,8 +41,7 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.TracksPager;
 
-public class SearchFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
-        ConnectionStateCallback {
+public class SearchFragment extends Fragment {
 
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
@@ -52,7 +52,6 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
     private RecyclerView.Adapter recyclerViewAdaper = null;
     private List<TrackWrapper> searchedTracks = null;
 
-    private SpotifyPlayer player = null;
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
     private SpotifyService spotifyService = null;
@@ -80,8 +79,6 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
         if (getArguments() != null) {
             accessToken = getArguments().getString(KEY_ACCESS_TOKEN);
             Log.i(TAG, "Access token inside the SearchFragment " + accessToken);
-            Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
-            setPlayer(config);
 
             spotifyApi = new SpotifyApi();
             spotifyApi.setAccessToken(accessToken);
@@ -113,7 +110,10 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
 
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
-                Log.e(TAG, "Item " + position + " with id " + searchedTracks.get(position).id + " clicked");
+                Log.i(TAG, "Item " + position + " with id " + searchedTracks.get(position).id + " clicked");
+                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position).id);
+                FragmentManager fragmentManager = getFragmentManager();
+                fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
             }
         });
 
@@ -181,58 +181,6 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
         super.onCreateOptionsMenu(menu,inflater);
     }
 
-    private void setPlayer(Config config) {
-        Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
-
-            @Override
-            public void onInitialized(SpotifyPlayer spotifyPlayer) {
-                player = spotifyPlayer;
-                player.addConnectionStateCallback(SearchFragment.this);
-                player.addNotificationCallback(SearchFragment.this);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                Log.e(TAG, "Failed to initialise the Spotify player inside the SearchFragment", throwable);
-                getActivity().finishAffinity();
-            }
-        });
-    }
-
-    @Override
-    public void onLoggedIn() {
-        Log.d(TAG, "onLoggedIn");
-    }
-
-    @Override
-    public void onLoggedOut() {
-        Log.d(TAG, "onLoggedOut");
-    }
-
-    @Override
-    public void onLoginFailed(Error error) {
-        Log.d(TAG, "onLoginFailed");
-    }
-
-    @Override
-    public void onTemporaryError() {
-        Log.d(TAG, "onTemporaryError");
-    }
-
-    @Override
-    public void onConnectionMessage(String s) {
-        Log.d(TAG, "onConnectionMessage");
-    }
-
-    @Override
-    public void onPlaybackEvent(PlayerEvent playerEvent) {
-        Log.d(TAG, "onPlaybackEvent");
-    }
-
-    @Override
-    public void onPlaybackError(Error error) {
-        Log.d(TAG, "onPlaybackError: " + error.toString());
-    }
 
     /**
      * This interface must be implemented by activities that contain this
@@ -324,7 +272,8 @@ public class SearchFragment extends Fragment implements SpotifyPlayer.Notificati
                         else
                             artists += t.artists.get(i).name + ", ";
                     }
-                    searchedTracks.add(new TrackWrapper(t.name, artists, t.id));
+                    String spotifyTrackPrefix = "spotify:track:";
+                    searchedTracks.add(new TrackWrapper(t.name, artists, spotifyTrackPrefix + t.id));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
             } else {
