@@ -60,14 +60,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             Log.i(TAG, "Access token inside the PlayerFragment " + accessToken);
             Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
             setPlayer(config);
-
             currentSongId = getArguments().getString(KEY_CURRENT_SONG_ID);
-//            if (currentSongId != null) {
-//                // play me
-//                Log.d(TAG, "Playing..." + currentSongId);
-//                Log.d(TAG, "Player: " + player);
-//                player.playUri(null, currentSongId, 0, 0);
-//            }
         }
     }
 
@@ -86,6 +79,9 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 }
             }
         });
+        if (currentSongId != null && player != null) {
+            player.playUri(null, currentSongId, 0, 0);
+        }
         return view;
     }
 

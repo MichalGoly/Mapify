@@ -87,7 +87,20 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             switch (response.getType()) {
                 case TOKEN:
                     accessToken = response.getAccessToken();
-                    startSearchFragment();
+                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
+                    Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
+
+                        @Override
+                        public void onInitialized(SpotifyPlayer spotifyPlayer) {
+                            startSearchFragment();
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                            Log.e(TAG, "Failed to initialise the Spotify player", throwable);
+                            finishAffinity();
+                        }
+                    });
                     break;
 
                 case ERROR:
