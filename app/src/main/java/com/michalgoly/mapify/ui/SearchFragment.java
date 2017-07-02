@@ -74,7 +74,6 @@ public class SearchFragment extends Fragment {
         if (getArguments() != null) {
             accessToken = getArguments().getString(KEY_ACCESS_TOKEN);
             Log.i(TAG, "Access token inside the SearchFragment " + accessToken);
-
             spotifyApi = new SpotifyApi();
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();

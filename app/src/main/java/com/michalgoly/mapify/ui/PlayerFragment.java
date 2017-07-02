@@ -1,9 +1,12 @@
 package com.michalgoly.mapify.ui;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,6 +41,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 
     private OnFragmentInteractionListener mListener;
 
+    private Toolbar toolbar = null;
     private Button playButton = null;
 
     public PlayerFragment() {
@@ -68,6 +72,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_player, container, false);
+        toolbar = (Toolbar) view.findViewById(R.id.tb_player_fragment);
+        toolbar.setTitleTextColor(Color.WHITE);
+        toolbar.setTitle("");
+        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+
         playButton = (Button) view.findViewById(R.id.btn_play);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,6 +88,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 }
             }
         });
+        // start playing the clicked track if a user navigated here through the SearchFragment
         if (currentTrack != null && player != null) {
             player.playUri(null, currentTrack.getId(), 0, 0);
         }
