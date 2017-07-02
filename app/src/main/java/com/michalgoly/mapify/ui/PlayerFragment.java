@@ -47,7 +47,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
 
-    private OnFragmentInteractionListener mListener;
+    private OnFragmentInteractionListener mListener = null;
 
     private Toolbar toolbar = null;
     private TextView titleTextView = null;
@@ -216,7 +216,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         Log.d(TAG, "Playback event received: " + playerEvent.name());
         currentPlaybackState = player.getPlaybackState();
         metadata = player.getMetadata();
-        updateUi(getContext());
+        // update the UI only on pause and play events
+        if (playerEvent.name().equals("kSpPlaybackNotifyPause")
+                || playerEvent.name().equals("kSpPlaybackNotifyPlay")) {
+            updateUi(getContext());
+        }
     }
 
     @Override
@@ -230,7 +234,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 
     private void playSong() {
         if (currentTrack != null && player != null) {
-            player.playUri(null, currentTrack.getId(), 0, 0);
+            if (currentPlaybackState != null) {
+                player.playUri(null, currentTrack.getId(), 0, (int) currentPlaybackState.positionMs);
+            } else {
+                player.playUri(null, currentTrack.getId(), 0, 0);
+            }
         } else {
             Log.d(TAG, "playSong(): currentTrack or player was null");
         }
