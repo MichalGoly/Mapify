@@ -104,10 +104,10 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
                 Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
-//                mainActivityListener.onFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position));
-                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position));
-                FragmentManager fragmentManager = getFragmentManager();
-                fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
+                mainActivityListener.onFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position));
+//                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position));
+//                FragmentManager fragmentManager = getFragmentManager();
+//                fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
             }
         });
 

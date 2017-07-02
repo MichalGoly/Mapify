@@ -210,7 +210,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         metadata = player.getMetadata();
         // update the UI only on pause and play events
         if (playerEvent.name().equals("kSpPlaybackNotifyPause")
-                || playerEvent.name().equals("kSpPlaybackNotifyPlay") && isAdded()) {
+                || playerEvent.name().equals("kSpPlaybackNotifyPlay")) {
             updateUi();
         }
     }
@@ -248,6 +248,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     private void updateUi() {
+
         /*
          * 1. Check if there is a current song and update the cover, song title and artist
          * 2. Otherwise, fill the toolbar with the primaryColor, set artist to an empty string and
@@ -255,22 +256,24 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
          * 3. If the current song is playing, show the pause button
          * 4. Otherwise, show the play button
          */
-        if (currentTrack != null) {
-            titleTextView.setText(currentTrack.getTitle());
-            artistsTextView.setText(currentTrack.getArtists());
-            new CoverTask().execute(currentTrack.getCoverUrl());
-        } else {
-            titleTextView.setText(getActivity().getString(R.string.ask_user_search));
-            artistsTextView.setText("");
-            toolbar.setBackground(null);
-            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
-        }
-        if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
-            playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
-            playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
-        } else {
-            playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-            playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+        if (isAdded()) {
+            if (currentTrack != null) {
+                titleTextView.setText(currentTrack.getTitle());
+                artistsTextView.setText(currentTrack.getArtists());
+                new CoverTask().execute(currentTrack.getCoverUrl());
+            } else {
+                titleTextView.setText(getActivity().getString(R.string.ask_user_search));
+                artistsTextView.setText("");
+                toolbar.setBackground(null);
+                toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
+            }
+            if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
+                playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
+                playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
+            } else {
+                playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+            }
         }
     }
 
