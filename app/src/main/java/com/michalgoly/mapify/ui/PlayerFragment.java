@@ -3,7 +3,6 @@ package com.michalgoly.mapify.ui;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -31,7 +30,6 @@ import com.spotify.sdk.android.player.SpotifyPlayer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 public class PlayerFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
@@ -126,7 +124,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         });
         // start playing the clicked track if a user navigated here through the SearchFragment
         playSong();
-        updateUi(view.getContext());
+        updateUi();
         return view;
     }
 
@@ -155,12 +153,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
         bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
-    }
-
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
     }
 
     @Override
@@ -218,8 +210,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         metadata = player.getMetadata();
         // update the UI only on pause and play events
         if (playerEvent.name().equals("kSpPlaybackNotifyPause")
-                || playerEvent.name().equals("kSpPlaybackNotifyPlay")) {
-            updateUi(getContext());
+                || playerEvent.name().equals("kSpPlaybackNotifyPlay") && isAdded()) {
+            updateUi();
         }
     }
 
@@ -228,8 +220,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         Log.d(TAG, "onPlaybackError: " + error.toString());
     }
 
+    /**
+     * Interaction with the parent Activity
+     */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
+        void onFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
     }
 
     private void playSong() {
@@ -252,7 +247,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         }
     }
 
-    private void updateUi(Context context) {
+    private void updateUi() {
         /*
          * 1. Check if there is a current song and update the cover, song title and artist
          * 2. Otherwise, fill the toolbar with the primaryColor, set artist to an empty string and
@@ -265,10 +260,10 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             artistsTextView.setText(currentTrack.getArtists());
             new CoverTask().execute(currentTrack.getCoverUrl());
         } else {
-            titleTextView.setText(context.getString(R.string.ask_user_search));
+            titleTextView.setText(getActivity().getString(R.string.ask_user_search));
             artistsTextView.setText("");
             toolbar.setBackground(null);
-            toolbar.setBackgroundColor(ContextCompat.getColor(context, R.color.colorPrimary));
+            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
         }
         if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
             playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);

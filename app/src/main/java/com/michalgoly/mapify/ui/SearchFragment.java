@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -50,7 +49,7 @@ public class SearchFragment extends Fragment {
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
     private SpotifyService spotifyService = null;
-    private OnFragmentInteractionListener mListener = null;
+    private OnFragmentInteractionListener mainActivityListener = null;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -105,6 +104,7 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
                 Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
+//                mainActivityListener.onFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position));
                 Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position));
                 FragmentManager fragmentManager = getFragmentManager();
                 fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
@@ -143,17 +143,11 @@ public class SearchFragment extends Fragment {
         return view;
     }
 
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+            mainActivityListener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -163,7 +157,7 @@ public class SearchFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+        mainActivityListener = null;
     }
 
     @Override
@@ -174,8 +168,11 @@ public class SearchFragment extends Fragment {
         super.onCreateOptionsMenu(menu,inflater);
     }
 
+    /**
+     * Interaction with the parent Activity
+     */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
+        void onFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
     }
 
     private class TracksAdapter extends RecyclerView.Adapter<TracksView> {

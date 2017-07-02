@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import android.widget.FrameLayout;
 
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private int bottomItemId = -1;
 
     private String accessToken = null;
+    private TrackWrapper currentTrack = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                  Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
-                fragment = PlayerFragment.newInstance(accessToken, null); // TODO change
+                fragment = PlayerFragment.newInstance(accessToken, currentTrack);
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -204,7 +206,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-        // no-op for now
+    public void onFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
+        /*
+         * 1. Update the currentTrack
+         * 2. Grab the menuItemId and select the appropriate bottom bar menu item
+         */
+        this.currentTrack = currentTrack;
+        if (menuItemId != -1) {
+           bottomNavigationView.findViewById(menuItemId).performClick();
+        }
     }
 }
