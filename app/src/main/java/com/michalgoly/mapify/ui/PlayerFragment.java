@@ -11,7 +11,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
@@ -23,8 +24,6 @@ import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
-
-import kaaes.spotify.webapi.android.SpotifyApi;
 
 public class PlayerFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
         ConnectionStateCallback {
@@ -42,7 +41,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private OnFragmentInteractionListener mListener;
 
     private Toolbar toolbar = null;
-    private Button playButton = null;
+    private TextView titleTextView = null;
+    private TextView artistTextView = null;
+    private ImageView playPauseImageView = null;
+    private ImageView previousImageView = null;
+    private ImageView nextImageView = null;
 
     public PlayerFragment() {
         // Required empty public constructor
@@ -88,10 +91,44 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 //                }
 //            }
 //        });
+        titleTextView = (TextView) view.findViewById(R.id.tv_player_track);
+        artistTextView = (TextView) view.findViewById(R.id.tv_player_artist);
+        previousImageView = (ImageView) view.findViewById(R.id.iv_previous);
+        previousImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "previousImageView clicked");
+            }
+        });
+        nextImageView = (ImageView) view.findViewById(R.id.iv_next);
+        nextImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "nextImageView clicked");
+            }
+        });
+        playPauseImageView = (ImageView) view.findViewById(R.id.iv_play_pause);
+        playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+        playPauseImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switch ((Integer) playPauseImageView.getTag()) {
+                    case R.drawable.ic_play_arrow_black_24dp:
+                        playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
+                        playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
+                        playSong();
+                        break;
+                    default:
+                        playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+                        pauseSong();
+                        break;
+                }
+            }
+        });
         // start playing the clicked track if a user navigated here through the SearchFragment
-        if (currentTrack != null && player != null) {
-            player.playUri(null, currentTrack.getId(), 0, 0);
-        }
+        playSong();
+        updateUi();
         return view;
     }
 
@@ -190,5 +227,34 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 
     public interface OnFragmentInteractionListener {
         void onFragmentInteraction(Uri uri);
+    }
+
+    private void playSong() {
+        if (currentTrack != null && player != null) {
+            player.playUri(null, currentTrack.getId(), 0, 0);
+        } else {
+            Log.d(TAG, "playSong(): currentTrack or player was null");
+        }
+    }
+
+    private void pauseSong() {
+        if (currentTrack != null && player != null) {
+            player.pause(null);
+        } else {
+            Log.d(TAG, "pauseSong(): currentTrack or player was null");
+        }
+    }
+
+    private void updateUi() {
+        /*
+         * 1. Check if there is a current song and update the cover, song title and artist
+         * 2. Otherwise, fill the toolbar with the primaryColor, set artist to an empty string and
+         * ask the user to search for a song
+         * 3. If the current song is playing, show the pause button
+         * 4. Otherwise, show the play button
+         */
+        if (currentTrack != null) {
+
+        }
     }
 }
