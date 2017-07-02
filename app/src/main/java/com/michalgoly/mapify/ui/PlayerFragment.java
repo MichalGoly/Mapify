@@ -77,17 +77,17 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         toolbar.setTitle("");
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
-        playButton = (Button) view.findViewById(R.id.btn_play);
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (player != null && currentTrack != null) {
-                    player.playUri(null, currentTrack.getId(), 0, 0);
-                } else {
-                    Log.d(TAG, "player or currentSongId was null!");
-                }
-            }
-        });
+//        playButton = (Button) view.findViewById(R.id.btn_play);
+//        playButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (player != null && currentTrack != null) {
+//                    player.playUri(null, currentTrack.getId(), 0, 0);
+//                } else {
+//                    Log.d(TAG, "player or currentSongId was null!");
+//                }
+//            }
+//        });
         // start playing the clicked track if a user navigated here through the SearchFragment
         if (currentTrack != null && player != null) {
             player.playUri(null, currentTrack.getId(), 0, 0);
