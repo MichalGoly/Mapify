@@ -61,7 +61,7 @@
         app:srcCompat="@drawable/ic_navigate_next_black_24dp" />
 
     <TextView
-        android:id="@+id/tv_player_artist"
+        android:id="@+id/tv_player_artists"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="TextView"
@@ -87,6 +87,6 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintHorizontal_bias="0.502"
         android:layout_marginBottom="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/tv_player_artist" />
+        app:layout_constraintBottom_toTopOf="@+id/tv_player_artists" />
 
 </android.support.constraint.ConstraintLayout>

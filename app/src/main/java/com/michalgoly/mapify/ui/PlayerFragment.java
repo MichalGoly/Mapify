@@ -35,14 +35,14 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private String accessToken = null;
     private SpotifyPlayer player = null;
     private TrackWrapper currentTrack = null;
-    private PlaybackState playbackState = null;
+    private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
 
     private OnFragmentInteractionListener mListener;
 
     private Toolbar toolbar = null;
     private TextView titleTextView = null;
-    private TextView artistTextView = null;
+    private TextView artistsTextView = null;
     private ImageView playPauseImageView = null;
     private ImageView previousImageView = null;
     private ImageView nextImageView = null;
@@ -80,19 +80,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         toolbar.setTitle("");
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
-//        playButton = (Button) view.findViewById(R.id.btn_play);
-//        playButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (player != null && currentTrack != null) {
-//                    player.playUri(null, currentTrack.getId(), 0, 0);
-//                } else {
-//                    Log.d(TAG, "player or currentSongId was null!");
-//                }
-//            }
-//        });
         titleTextView = (TextView) view.findViewById(R.id.tv_player_track);
-        artistTextView = (TextView) view.findViewById(R.id.tv_player_artist);
+        artistsTextView = (TextView) view.findViewById(R.id.tv_player_artists);
         previousImageView = (ImageView) view.findViewById(R.id.iv_previous);
         previousImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -216,8 +205,9 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     @Override
     public void onPlaybackEvent(PlayerEvent playerEvent) {
         Log.d(TAG, "Playback event received: " + playerEvent.name());
-        playbackState = player.getPlaybackState();
+        currentPlaybackState = player.getPlaybackState();
         metadata = player.getMetadata();
+        updateUi();
     }
 
     @Override
@@ -254,7 +244,18 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
          * 4. Otherwise, show the play button
          */
         if (currentTrack != null) {
-
+            titleTextView.setText(currentTrack.getTitle());
+            artistsTextView.setText(currentTrack.getArtists());
+        } else {
+            titleTextView.setText(getString(R.string.ask_user_search));
+            artistsTextView.setText("");
+        }
+        if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
+            playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
+            playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
+        } else {
+            playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+            playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
         }
     }
 }
