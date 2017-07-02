@@ -233,7 +233,7 @@ public class SearchFragment extends Fragment {
             if (tracksPager != null) {
                 searchedTracks = new ArrayList<>();
                 for (Track t : tracksPager.tracks.items) {
-                    Log.d(TAG, "id: " + t.id + ", name: " + t.name);
+                    Log.d(TAG, "id: " + t.id + ", name: " + t.name + "cover: " + t.album.images.get(0).url);
                     String artists = "";
                     for (int i = 0; i < t.artists.size(); i++) {
                         if (i + 1 == t.artists.size())
@@ -242,7 +242,8 @@ public class SearchFragment extends Fragment {
                             artists += t.artists.get(i).name + ", ";
                     }
                     String spotifyTrackPrefix = "spotify:track:";
-                    searchedTracks.add(new TrackWrapper(t.name, artists, spotifyTrackPrefix + t.id));
+                    searchedTracks.add(new TrackWrapper(t.name, artists, spotifyTrackPrefix + t.id,
+                            t.album.images.get(0).url));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
             } else {

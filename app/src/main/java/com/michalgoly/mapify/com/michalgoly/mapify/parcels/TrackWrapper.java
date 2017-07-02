@@ -8,17 +8,13 @@ public class TrackWrapper implements Parcelable {
     private String title = null;
     private String artists = null;
     private String id = null;
+    private String coverUrl = null;
 
-    public TrackWrapper(String title, String artists, String id) {
+    public TrackWrapper(String title, String artists, String id, String coverUrl) {
         this.title = title;
         this.artists = artists;
         this.id = id;
-    }
-
-    protected TrackWrapper(Parcel in) {
-        title = in.readString();
-        artists = in.readString();
-        id = in.readString();
+        this.coverUrl = coverUrl;
     }
 
     public String getTitle() {
@@ -45,6 +41,21 @@ public class TrackWrapper implements Parcelable {
         this.id = id;
     }
 
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public void setCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
+    }
+
+    protected TrackWrapper(Parcel in) {
+        title = in.readString();
+        artists = in.readString();
+        id = in.readString();
+        coverUrl = in.readString();
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -55,6 +66,7 @@ public class TrackWrapper implements Parcelable {
         dest.writeString(title);
         dest.writeString(artists);
         dest.writeString(id);
+        dest.writeString(coverUrl);
     }
 
     @SuppressWarnings("unused")

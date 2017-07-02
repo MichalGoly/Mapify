@@ -2,9 +2,12 @@ package com.michalgoly.mapify.ui;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -24,6 +27,12 @@ import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class PlayerFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
         ConnectionStateCallback {
@@ -117,7 +126,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         });
         // start playing the clicked track if a user navigated here through the SearchFragment
         playSong();
-        updateUi();
+        updateUi(view.getContext());
         return view;
     }
 
@@ -207,7 +216,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         Log.d(TAG, "Playback event received: " + playerEvent.name());
         currentPlaybackState = player.getPlaybackState();
         metadata = player.getMetadata();
-        updateUi();
+        updateUi(getContext());
     }
 
     @Override
@@ -235,7 +244,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         }
     }
 
-    private void updateUi() {
+    private void updateUi(Context context) {
         /*
          * 1. Check if there is a current song and update the cover, song title and artist
          * 2. Otherwise, fill the toolbar with the primaryColor, set artist to an empty string and
@@ -246,9 +255,12 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         if (currentTrack != null) {
             titleTextView.setText(currentTrack.getTitle());
             artistsTextView.setText(currentTrack.getArtists());
+            new CoverTask().execute(currentTrack.getCoverUrl());
         } else {
-            titleTextView.setText(getString(R.string.ask_user_search));
+            titleTextView.setText(context.getString(R.string.ask_user_search));
             artistsTextView.setText("");
+            toolbar.setBackground(null);
+            toolbar.setBackgroundColor(ContextCompat.getColor(context, R.color.colorPrimary));
         }
         if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
             playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
@@ -256,6 +268,32 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         } else {
             playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
             playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+        }
+    }
+
+    private class CoverTask extends AsyncTask<String, Void, Drawable> {
+        @Override
+        protected Drawable doInBackground(String... params) {
+            Drawable cover = null;
+            try (InputStream in = new BufferedInputStream((InputStream) new URL(
+                    currentTrack.getCoverUrl()).getContent())) {
+                cover = Drawable.createFromStream(in, "Spotify URL cover");
+            } catch (IOException e) {
+                Log.w(TAG, "Failed to read the cover url: " + currentTrack.getCoverUrl(), e);
+            }
+            return cover;
+        }
+
+        @Override
+        protected void onPostExecute(Drawable drawable) {
+            if (isAdded()) {
+                if (drawable != null) {
+                    toolbar.setBackground(drawable);
+                } else {
+                    toolbar.setBackground(null);
+                    toolbar.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.colorPrimary));
+                }
+            }
         }
     }
 }
