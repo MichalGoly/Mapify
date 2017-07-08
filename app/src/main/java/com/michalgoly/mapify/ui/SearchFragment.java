@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
@@ -39,6 +40,7 @@ public class SearchFragment extends Fragment {
 
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
+    private static final String KEY_SEARCHED_TRACKS = "KEY_SEARCHED_TRACKS";
 
     private Toolbar toolbar = null;
     private MaterialSearchView materialSearchView = null;
@@ -49,7 +51,7 @@ public class SearchFragment extends Fragment {
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
     private SpotifyService spotifyService = null;
-    private OnFragmentInteractionListener mainActivityListener = null;
+    private OnSearchFragmentInteractionListener mainActivityListener = null;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -59,10 +61,11 @@ public class SearchFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      */
-    public static SearchFragment newInstance(String accessToken) {
+    public static SearchFragment newInstance(String accessToken, List<TrackWrapper> searchedTracks) {
         SearchFragment fragment = new SearchFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
+        args.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
         fragment.setArguments(args);
         return fragment;
     }
@@ -76,6 +79,7 @@ public class SearchFragment extends Fragment {
             spotifyApi = new SpotifyApi();
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();
+            searchedTracks = getArguments().getParcelableArrayList(KEY_SEARCHED_TRACKS);
         }
     }
 
@@ -83,6 +87,7 @@ public class SearchFragment extends Fragment {
     public void onSaveInstanceState(Bundle bundle) {
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
+        bundle.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
     }
 
     @Override
@@ -104,10 +109,8 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
                 Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
-                mainActivityListener.onFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position));
-//                Fragment fragment = PlayerFragment.newInstance(accessToken, searchedTracks.get(position));
-//                FragmentManager fragmentManager = getFragmentManager();
-//                fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
+                mainActivityListener.onSearchFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position),
+                        searchedTracks);
             }
         });
 
@@ -146,11 +149,11 @@ public class SearchFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mainActivityListener = (OnFragmentInteractionListener) context;
+        if (context instanceof OnSearchFragmentInteractionListener) {
+            mainActivityListener = (OnSearchFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnSearchFragmentInteractionListener");
         }
     }
 
@@ -171,8 +174,8 @@ public class SearchFragment extends Fragment {
     /**
      * Interaction with the parent Activity
      */
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+    public interface OnSearchFragmentInteractionListener {
+        void onSearchFragmentInteraction(int menuitemId, TrackWrapper currentTrack, List<TrackWrapper> searchedTracks);
     }
 
     private class TracksAdapter extends RecyclerView.Adapter<TracksView> {
@@ -243,6 +246,7 @@ public class SearchFragment extends Fragment {
                             t.album.images.get(0).url));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
+                mainActivityListener.onSearchFragmentInteraction(-1, null, searchedTracks);
             } else {
                 Log.d(TAG, "tracks was null");
             }

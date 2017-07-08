@@ -45,7 +45,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
 
-    private OnFragmentInteractionListener mListener = null;
+    private OnPlayerFragmentInteractionListener mainActivityListener = null;
 
     private Toolbar toolbar = null;
     private TextView titleTextView = null;
@@ -158,18 +158,18 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+        if (context instanceof OnPlayerFragmentInteractionListener) {
+            mainActivityListener = (OnPlayerFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnPlayerFragmentInteractionListener");
         }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+        mainActivityListener = null;
     }
 
     @Override
@@ -223,8 +223,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     /**
      * Interaction with the parent Activity
      */
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+    public interface OnPlayerFragmentInteractionListener {
+        void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
     }
 
     private void playSong() {

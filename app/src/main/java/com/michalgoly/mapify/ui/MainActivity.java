@@ -24,9 +24,13 @@ import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
-        PlayerFragment.OnFragmentInteractionListener,
-        MapFragment.OnFragmentInteractionListener {
+import java.util.List;
+
+import kaaes.spotify.webapi.android.models.Track;
+
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener,
+        PlayerFragment.OnPlayerFragmentInteractionListener,
+        MapFragment.OnMapFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
@@ -38,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     private String accessToken = null;
     private TrackWrapper currentTrack = null;
+    private List<TrackWrapper> searchedTracks = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         switch (menuItemId) {
             case R.id.bottom_menu_search:
                 if (accessToken != null)
-                 fragment = SearchFragment.newInstance(accessToken);
+                 fragment = SearchFragment.newInstance(accessToken, searchedTracks);
                 else
                  Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
@@ -187,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private void startSearchFragment() {
         Fragment fragment = null;
         try {
-            fragment = SearchFragment.newInstance(accessToken);
+            fragment = SearchFragment.newInstance(accessToken, searchedTracks);
         } catch (Exception e) {
             Log.e(TAG, "Failed to instantiate the SearchFragment", e);
         }
@@ -199,14 +204,29 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
+    public void onSearchFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
+                                            List<TrackWrapper> searchedTracks) {
         /*
          * 1. Update the currentTrack
          * 2. Grab the menuItemId and select the appropriate bottom bar menu item
          */
-        this.currentTrack = currentTrack;
-        if (menuItemId != -1) {
+        if (currentTrack != null)
+           this.currentTrack = currentTrack;
+        if (searchedTracks != null)
+           this.searchedTracks = searchedTracks;
+        if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
-        }
     }
+
+    @Override
+    public void onMapFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
+        // currently no-op
+    }
+
+    @Override
+    public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
+        // currently no-op
+    }
+
+
 }

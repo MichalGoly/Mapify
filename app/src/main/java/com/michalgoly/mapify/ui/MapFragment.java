@@ -29,7 +29,7 @@ public class MapFragment extends Fragment {
 //    private String mParam1;
 //    private String mParam2;
 
-    private OnFragmentInteractionListener mListener;
+    private OnMapFragmentInteractionListener mainActivityListener = null;
 
     public MapFragment() {
         // Required empty public constructor
@@ -78,24 +78,24 @@ public class MapFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+        if (context instanceof OnMapFragmentInteractionListener) {
+            mainActivityListener = (OnMapFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnMapFragmentInteractionListener");
         }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+        mainActivityListener = null;
     }
 
     /**
      * Interaction with the parent Activity
      */
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+    public interface OnMapFragmentInteractionListener {
+        void onMapFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
     }
 }
