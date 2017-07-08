@@ -38,6 +38,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private static final String TAG = "PlayerFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_CURRENT_TRACK= "KEY_CURRENT_TRACK";
+    private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
+    private static final String KEY_METADATA = "KEY_METADATA";
 
     private String accessToken = null;
     private SpotifyPlayer player = null;
@@ -58,11 +60,14 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         // Required empty public constructor
     }
 
-    public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack) {
+    public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack,
+                                             PlaybackState currentPlaybackState, Metadata metadata) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
         args.putParcelable(KEY_CURRENT_TRACK, currentTrack);
+        args.putParcelable(KEY_PLAYBACK_STATE, currentPlaybackState);
+        args.putParcelable(KEY_METADATA, metadata);
         fragment.setArguments(args);
         return fragment;
     }
@@ -76,6 +81,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
             setPlayer(config);
             currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
+            currentPlaybackState = getArguments().getParcelable(KEY_PLAYBACK_STATE);
+            metadata = getArguments().getParcelable(KEY_METADATA);
         }
     }
 
@@ -122,8 +129,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 }
             }
         });
-        // start playing the clicked track if a user navigated here through the SearchFragment
-        playSong();
         updateUi();
         return view;
     }
@@ -153,6 +158,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
         bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
+        bundle.putParcelable(KEY_PLAYBACK_STATE, currentPlaybackState);
+        bundle.putParcelable(KEY_METADATA, metadata);
     }
 
     @Override
@@ -208,6 +215,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         Log.d(TAG, "Playback event received: " + playerEvent.name());
         currentPlaybackState = player.getPlaybackState();
         metadata = player.getMetadata();
+        if (isAdded()) {
+            Log.d(TAG, "mainActivityListener" + mainActivityListener);
+            mainActivityListener.onPlayerFragmentInteraction(-1, currentTrack, currentPlaybackState, metadata);
+
+        }
         // update the UI only on pause and play events
         if (playerEvent.name().equals("kSpPlaybackNotifyPause")
                 || playerEvent.name().equals("kSpPlaybackNotifyPlay")) {
@@ -224,7 +236,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
      * Interaction with the parent Activity
      */
     public interface OnPlayerFragmentInteractionListener {
-        void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+        void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack,
+                                         PlaybackState currentPlaybackState, Metadata metadata);
     }
 
     private void playSong() {
@@ -248,7 +261,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     private void updateUi() {
-
         /*
          * 1. Check if there is a current song and update the cover, song title and artist
          * 2. Otherwise, fill the toolbar with the primaryColor, set artist to an empty string and

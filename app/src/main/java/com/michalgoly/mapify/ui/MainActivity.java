@@ -21,6 +21,8 @@ import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
 import com.spotify.sdk.android.authentication.LoginActivity;
 import com.spotify.sdk.android.player.Config;
+import com.spotify.sdk.android.player.Metadata;
+import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
@@ -43,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private String accessToken = null;
     private TrackWrapper currentTrack = null;
     private List<TrackWrapper> searchedTracks = null;
+    private PlaybackState currentPlaybackState = null;
+    private Metadata metadata = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,7 +160,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                  Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
-                fragment = PlayerFragment.newInstance(accessToken, currentTrack);
+                fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
+                        metadata);
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -224,8 +229,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
-        // currently no-op
+    public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
+                                            PlaybackState currentPlaybackState, Metadata metadata) {
+        if (currentTrack != null)
+            this.currentTrack = currentTrack;
+        if (currentPlaybackState != null)
+            this.currentPlaybackState = currentPlaybackState;
+        if (metadata != null)
+            this.metadata = metadata;
+        if (menuItemId != -1)
+            bottomNavigationView.findViewById(menuItemId).performClick();
     }
 
 
