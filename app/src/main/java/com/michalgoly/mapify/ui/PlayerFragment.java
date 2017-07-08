@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -31,6 +32,10 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class PlayerFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
         ConnectionStateCallback {
@@ -40,12 +45,14 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private static final String KEY_CURRENT_TRACK= "KEY_CURRENT_TRACK";
     private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
     private static final String KEY_METADATA = "KEY_METADATA";
+    private static final String KEY_TRACK_QUEUE = "KEY_TRACK_QUEUE";
 
     private String accessToken = null;
     private SpotifyPlayer player = null;
     private TrackWrapper currentTrack = null;
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
+    private Queue<TrackWrapper> trackQueue = null;
 
     private OnPlayerFragmentInteractionListener mainActivityListener = null;
 
@@ -61,13 +68,15 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack,
-                                             PlaybackState currentPlaybackState, Metadata metadata) {
+                                             PlaybackState currentPlaybackState, Metadata metadata,
+                                             Queue<TrackWrapper> trackQueue) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
         args.putParcelable(KEY_CURRENT_TRACK, currentTrack);
         args.putParcelable(KEY_PLAYBACK_STATE, currentPlaybackState);
         args.putParcelable(KEY_METADATA, metadata);
+        args.putParcelableArrayList(KEY_TRACK_QUEUE, new ArrayList<>(trackQueue));
         fragment.setArguments(args);
         return fragment;
     }
@@ -83,6 +92,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
             currentPlaybackState = getArguments().getParcelable(KEY_PLAYBACK_STATE);
             metadata = getArguments().getParcelable(KEY_METADATA);
+            trackQueue = (Queue)new LinkedList<>(getArguments().getParcelableArrayList(KEY_TRACK_QUEUE));
         }
     }
 
@@ -103,6 +113,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 Log.d(TAG, "previousImageView clicked");
 //                currentTrack = TrackWrapper.fromTrack(metadata.prevTrack);
 //                playSong();
+
             }
         });
         nextImageView = (ImageView) view.findViewById(R.id.iv_next);
@@ -110,9 +121,19 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "nextImageView clicked");
-                Log.d(TAG, metadata.toString());
-//                currentTrack = TrackWrapper.fromTrack(metadata.nextTrack);
-//                playSong();
+                if (trackQueue != null && !trackQueue.isEmpty()) {
+                    currentTrack = trackQueue.poll();
+                    metadata = null;
+                    currentPlaybackState = null;
+                    playSong();
+                    updateUi();
+                }
+//                if (metadata != null && metadata.nextTrack != null) {
+//                    currentTrack = TrackWrapper.fromTrack(metadata.nextTrack);
+//                    playSong();
+//                } else {
+//                    Log.i(TAG, "No more tracks in the queue!");
+//                }
             }
         });
         playPauseImageView = (ImageView) view.findViewById(R.id.iv_play_pause);
@@ -167,6 +188,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
         bundle.putParcelable(KEY_PLAYBACK_STATE, currentPlaybackState);
         bundle.putParcelable(KEY_METADATA, metadata);
+        bundle.putParcelableArrayList(KEY_TRACK_QUEUE, new ArrayList<>(trackQueue));
     }
 
     @Override

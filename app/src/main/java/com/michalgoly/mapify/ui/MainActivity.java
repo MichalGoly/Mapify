@@ -26,7 +26,9 @@ import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import kaaes.spotify.webapi.android.models.Track;
 
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private List<TrackWrapper> searchedTracks = null;
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
+    private Queue<TrackWrapper> trackQueue = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 break;
             case R.id.bottom_menu_player:
                 fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
-                        metadata);
+                        metadata, trackQueue);
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -215,7 +218,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
          * 1. Update the currentTrack
          * 2. Update the searchedTracks
          * 3. Make sure the old currentPlaybackState and metadata are wiped
-         * 2. Grab the menuItemId and select the appropriate bottom bar menu item
+         * 4. Create a queue of tracks to play after the currentTrack
+         * 5. Grab the menuItemId and select the appropriate bottom bar menu item
          */
         if (currentTrack != null)
            this.currentTrack = currentTrack;
@@ -223,6 +227,18 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
            this.searchedTracks = searchedTracks;
         this.currentPlaybackState = null;
         this.metadata = null;
+        this.trackQueue = new LinkedList<>();
+        if (searchedTracks != null && currentTrack != null) {
+            boolean add = false;
+            for (TrackWrapper track : searchedTracks) {
+                if (add || track.getId().equals(currentTrack.getId())) {
+                    if (!add)
+                        add = true;
+                    this.trackQueue.add(track);
+                }
+            }
+            Log.d(TAG, "trackQueue: " + trackQueue.toString());
+        }
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
     }
