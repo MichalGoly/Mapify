@@ -3,6 +3,8 @@ package com.michalgoly.mapify.com.michalgoly.mapify.parcels;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.spotify.sdk.android.player.Metadata;
+
 public class TrackWrapper implements Parcelable {
 
     private String title = null;
@@ -15,6 +17,10 @@ public class TrackWrapper implements Parcelable {
         this.artists = artists;
         this.id = id;
         this.coverUrl = coverUrl;
+    }
+
+    public static TrackWrapper fromTrack(Metadata.Track track) {
+        return new TrackWrapper(track.name, track.artistName, track.uri, track.albumCoverWebUrl);
     }
 
     public String getTitle() {
@@ -81,4 +87,5 @@ public class TrackWrapper implements Parcelable {
             return new TrackWrapper[size];
         }
     };
+
 }

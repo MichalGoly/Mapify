@@ -101,6 +101,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "previousImageView clicked");
+//                currentTrack = TrackWrapper.fromTrack(metadata.prevTrack);
+//                playSong();
             }
         });
         nextImageView = (ImageView) view.findViewById(R.id.iv_next);
@@ -108,6 +110,9 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "nextImageView clicked");
+                Log.d(TAG, metadata.toString());
+//                currentTrack = TrackWrapper.fromTrack(metadata.nextTrack);
+//                playSong();
             }
         });
         playPauseImageView = (ImageView) view.findViewById(R.id.iv_play_pause);
@@ -129,6 +134,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 }
             }
         });
+        if (currentPlaybackState == null)
+            playSong();
         updateUi();
         return view;
     }

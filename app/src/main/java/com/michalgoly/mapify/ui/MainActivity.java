@@ -213,12 +213,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                                             List<TrackWrapper> searchedTracks) {
         /*
          * 1. Update the currentTrack
+         * 2. Update the searchedTracks
+         * 3. Make sure the old currentPlaybackState and metadata are wiped
          * 2. Grab the menuItemId and select the appropriate bottom bar menu item
          */
         if (currentTrack != null)
            this.currentTrack = currentTrack;
         if (searchedTracks != null)
            this.searchedTracks = searchedTracks;
+        this.currentPlaybackState = null;
+        this.metadata = null;
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
     }
