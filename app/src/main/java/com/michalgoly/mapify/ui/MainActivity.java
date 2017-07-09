@@ -258,9 +258,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         if (searchedTracks != null && currentTrack != null) {
             boolean add = false;
             for (TrackWrapper track : searchedTracks) {
-                if (add || track.getId().equals(currentTrack.getId())) {
-                    if (!add)
-                        add = true;
+                if (track.getId().equals(currentTrack.getId()))
+                    add = true;
+                else if (add) {
                     this.trackQueue.add(track);
                 }
             }
