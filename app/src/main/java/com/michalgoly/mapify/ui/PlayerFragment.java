@@ -46,6 +46,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
     private static final String KEY_METADATA = "KEY_METADATA";
     private static final String KEY_NEXT_TRACKS = "KEY_NEXT_TRACKS";
+    private static final String KEY_PREVIOUS_TRACKS = "KEY_PREVIOUS_TRACKS";
 
     private static final String PLAYBACK_PLAY = "kSpPlaybackNotifyPlay";
     private static final String PLAYBACK_PAUSE = "kSpPlaybackNotifyPause";
@@ -57,6 +58,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
     private LinkedList<TrackWrapper> nextTracks = null;
+    private LinkedList<TrackWrapper> previousTracks = null;
 
     private OnPlayerFragmentInteractionListener mainActivityListener = null;
 
@@ -72,8 +74,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack,
-                                             PlaybackState currentPlaybackState, Metadata metadata,
-                                             LinkedList<TrackWrapper> nextTracks) {
+            PlaybackState currentPlaybackState, Metadata metadata, LinkedList<TrackWrapper> nextTracks,
+            LinkedList<TrackWrapper> previousTracks) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
@@ -84,6 +86,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             args.putParcelableArrayList(KEY_NEXT_TRACKS, new ArrayList<>(nextTracks));
         } else {
             args.putParcelableArrayList(KEY_NEXT_TRACKS, null);
+        }
+        if (previousTracks != null) {
+            args.putParcelableArrayList(KEY_PREVIOUS_TRACKS, new ArrayList<>(previousTracks));
+        } else {
+            args.putParcelableArrayList(KEY_PREVIOUS_TRACKS, null);
         }
         fragment.setArguments(args);
         return fragment;
@@ -105,6 +112,11 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 nextTracks = (LinkedList) new LinkedList<>(trackList);
             } else {
                 nextTracks = new LinkedList<>();
+            }
+            if (previousTracks != null) {
+                previousTracks = (LinkedList) new LinkedList<>(previousTracks);
+            } else {
+                previousTracks = new LinkedList<>();
             }
         }
     }
@@ -189,6 +201,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         bundle.putParcelable(KEY_PLAYBACK_STATE, currentPlaybackState);
         bundle.putParcelable(KEY_METADATA, metadata);
         bundle.putParcelableArrayList(KEY_NEXT_TRACKS, new ArrayList<>(nextTracks));
+        bundle.putParcelableArrayList(KEY_PREVIOUS_TRACKS, new ArrayList<>(previousTracks));
     }
 
     @Override
@@ -246,8 +259,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         metadata = player.getMetadata();
         if (isAdded()) {
             Log.d(TAG, "mainActivityListener" + mainActivityListener);
-            mainActivityListener.onPlayerFragmentInteraction(-1, currentTrack, currentPlaybackState, metadata);
-
+            mainActivityListener.onPlayerFragmentInteraction(-1, currentTrack, currentPlaybackState,
+                    metadata, previousTracks);
         }
         // update the UI only on pause and play events
         if (playerEvent.name().equals(PLAYBACK_PAUSE) || playerEvent.name().equals(PLAYBACK_PLAY)) {
@@ -267,7 +280,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
      */
     public interface OnPlayerFragmentInteractionListener {
         void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack,
-                                         PlaybackState currentPlaybackState, Metadata metadata);
+                                         PlaybackState currentPlaybackState, Metadata metadata,
+                                         LinkedList<TrackWrapper> previousTracks);
     }
 
     private void playSong() {
@@ -292,7 +306,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
 
     private void playNextSong() {
         if (nextTracks != null && !nextTracks.isEmpty()) {
-            currentTrack = nextTracks.poll();
+            previousTracks.offerLast(currentTrack);
+            currentTrack = nextTracks.pollFirst();
             metadata = null;
             currentPlaybackState = null;
             playSong();
@@ -303,7 +318,19 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     private void playPreviousSong() {
-        // no-op for now
+        if (previousTracks != null && !previousTracks.isEmpty()) {
+            nextTracks.offerFirst(currentTrack);
+            currentTrack = previousTracks.pollLast();
+            metadata = null;
+            currentPlaybackState = null;
+            Log.d(TAG, "previousTracks:");
+            for (TrackWrapper tw : previousTracks)
+                Log.d(TAG, tw.getTitle());
+            playSong();
+            updateUi();
+        } else {
+            Log.d(TAG, "playPreviousSong(): previousTrack was null or empty");
+        }
     }
 
     private void updateUi() {

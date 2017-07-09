@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
     private LinkedList<TrackWrapper> nextTracks = null;
+    private LinkedList<TrackWrapper> previousTracks = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 break;
             case R.id.bottom_menu_player:
                 fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
-                        metadata, nextTracks);
+                        metadata, nextTracks, previousTracks);
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -229,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         this.metadata = null;
         this.nextTracks = new LinkedList<>();
         updateTrackQueue(searchedTracks, currentTrack);
+        this.previousTracks = new LinkedList<>();
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
     }
@@ -240,7 +242,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     @Override
     public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
-                                            PlaybackState currentPlaybackState, Metadata metadata) {
+                                            PlaybackState currentPlaybackState, Metadata metadata,
+                                            LinkedList<TrackWrapper> previousTracks) {
         if (currentTrack != null) {
             this.currentTrack = currentTrack;
             updateTrackQueue(this.searchedTracks, currentTrack);
@@ -249,6 +252,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             this.currentPlaybackState = currentPlaybackState;
         if (metadata != null)
             this.metadata = metadata;
+        if (previousTracks != null)
+            this.previousTracks = previousTracks;
         if (menuItemId != -1)
             bottomNavigationView.findViewById(menuItemId).performClick();
     }
