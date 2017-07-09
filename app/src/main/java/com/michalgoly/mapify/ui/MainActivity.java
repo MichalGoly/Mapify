@@ -228,17 +228,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         this.currentPlaybackState = null;
         this.metadata = null;
         this.trackQueue = new LinkedList<>();
-        if (searchedTracks != null && currentTrack != null) {
-            boolean add = false;
-            for (TrackWrapper track : searchedTracks) {
-                if (add || track.getId().equals(currentTrack.getId())) {
-                    if (!add)
-                        add = true;
-                    this.trackQueue.add(track);
-                }
-            }
-            Log.d(TAG, "trackQueue: " + trackQueue.toString());
-        }
+        updateTrackQueue(searchedTracks, currentTrack);
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
     }
@@ -251,14 +241,31 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
                                             PlaybackState currentPlaybackState, Metadata metadata) {
-        if (currentTrack != null)
+        if (currentTrack != null) {
             this.currentTrack = currentTrack;
+            updateTrackQueue(this.searchedTracks, currentTrack);
+        }
         if (currentPlaybackState != null)
             this.currentPlaybackState = currentPlaybackState;
         if (metadata != null)
             this.metadata = metadata;
         if (menuItemId != -1)
             bottomNavigationView.findViewById(menuItemId).performClick();
+    }
+
+    private void updateTrackQueue(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
+        this.trackQueue = new LinkedList<>();
+        if (searchedTracks != null && currentTrack != null) {
+            boolean add = false;
+            for (TrackWrapper track : searchedTracks) {
+                if (add || track.getId().equals(currentTrack.getId())) {
+                    if (!add)
+                        add = true;
+                    this.trackQueue.add(track);
+                }
+            }
+            Log.d(TAG, "trackQueue: " + trackQueue.toString());
+        }
     }
 
 

@@ -233,6 +233,8 @@ public class SearchFragment extends Fragment {
             if (tracksPager != null) {
                 searchedTracks = new ArrayList<>();
                 for (Track t : tracksPager.tracks.items) {
+                    if (t.album.images.isEmpty())
+                        continue;
                     Log.d(TAG, "id: " + t.id + ", name: " + t.name + "cover: " + t.album.images.get(0).url);
                     String artists = "";
                     for (int i = 0; i < t.artists.size(); i++) {
