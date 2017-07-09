@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private List<TrackWrapper> searchedTracks = null;
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
-    private Queue<TrackWrapper> trackQueue = null;
+    private LinkedList<TrackWrapper> nextTracks = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 break;
             case R.id.bottom_menu_player:
                 fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
-                        metadata, trackQueue);
+                        metadata, nextTracks);
                 break;
             case R.id.bottom_menu_map:
                 fragment = MapFragment.newInstance();
@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
            this.searchedTracks = searchedTracks;
         this.currentPlaybackState = null;
         this.metadata = null;
-        this.trackQueue = new LinkedList<>();
+        this.nextTracks = new LinkedList<>();
         updateTrackQueue(searchedTracks, currentTrack);
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
@@ -254,17 +254,17 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     private void updateTrackQueue(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
-        this.trackQueue = new LinkedList<>();
+        this.nextTracks = new LinkedList<>();
         if (searchedTracks != null && currentTrack != null) {
             boolean add = false;
             for (TrackWrapper track : searchedTracks) {
                 if (track.getId().equals(currentTrack.getId()))
                     add = true;
                 else if (add) {
-                    this.trackQueue.add(track);
+                    this.nextTracks.add(track);
                 }
             }
-            Log.d(TAG, "trackQueue: " + trackQueue.toString());
+            Log.d(TAG, "trackQueue: " + nextTracks.toString());
         }
     }
 
