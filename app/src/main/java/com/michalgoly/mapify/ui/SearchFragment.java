@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -41,12 +42,14 @@ public class SearchFragment extends Fragment {
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_SEARCHED_TRACKS = "KEY_SEARCHED_TRACKS";
+    private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
 
     private Toolbar toolbar = null;
     private MaterialSearchView materialSearchView = null;
     private RecyclerView recyclerView = null;
     private RecyclerView.Adapter recyclerViewAdaper = null;
     private List<TrackWrapper> searchedTracks = null;
+    private TrackWrapper currentTrack = null;
 
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
@@ -61,11 +64,13 @@ public class SearchFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      */
-    public static SearchFragment newInstance(String accessToken, List<TrackWrapper> searchedTracks) {
+    public static SearchFragment newInstance(String accessToken, List<TrackWrapper> searchedTracks,
+                                             TrackWrapper currentTrack) {
         SearchFragment fragment = new SearchFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
         args.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
+        args.putParcelable(KEY_CURRENT_TRACK, currentTrack);
         fragment.setArguments(args);
         return fragment;
     }
@@ -80,6 +85,7 @@ public class SearchFragment extends Fragment {
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();
             searchedTracks = getArguments().getParcelableArrayList(KEY_SEARCHED_TRACKS);
+            currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
         }
     }
 
@@ -88,6 +94,7 @@ public class SearchFragment extends Fragment {
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
         bundle.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
+        bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
     }
 
     @Override
@@ -198,6 +205,11 @@ public class SearchFragment extends Fragment {
             if (searchedTracks != null) {
                 holder.title.setText(searchedTracks.get(position).getTitle());
                 holder.artists.setText(searchedTracks.get(position).getArtists());
+                if (currentTrack != null
+                        && searchedTracks.get(position).getId().equals(currentTrack.getId())) {
+                    holder.title.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccentDark));
+                    holder.artists.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccentDark));
+                }
             } else {
                 Log.d(TAG, "searchedTrack was null in onBindViewHolder");
             }

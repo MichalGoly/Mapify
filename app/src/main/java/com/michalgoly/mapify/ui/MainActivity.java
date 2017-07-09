@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         switch (menuItemId) {
             case R.id.bottom_menu_search:
                 if (accessToken != null)
-                 fragment = SearchFragment.newInstance(accessToken, searchedTracks);
+                 fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
                 else
                  Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
@@ -200,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private void startSearchFragment() {
         Fragment fragment = null;
         try {
-            fragment = SearchFragment.newInstance(accessToken, searchedTracks);
+            fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
         } catch (Exception e) {
             Log.e(TAG, "Failed to instantiate the SearchFragment", e);
         }
