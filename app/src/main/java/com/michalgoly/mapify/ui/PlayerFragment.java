@@ -311,7 +311,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             metadata = null;
             currentPlaybackState = null;
             playSong();
-            updateUi();
+//            updateUi();
         } else {
             Log.d(TAG, "playNextSone(): trackQueue was null or empty");
         }
@@ -324,7 +324,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             metadata = null;
             currentPlaybackState = null;
             playSong();
-            updateUi();
+//            updateUi();
         } else {
             Log.d(TAG, "playPreviousSong(): previousTrack was null or empty");
         }
