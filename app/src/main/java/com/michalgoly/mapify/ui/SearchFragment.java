@@ -8,7 +8,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -45,11 +44,13 @@ public class SearchFragment extends Fragment {
     private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
 
     private Toolbar toolbar = null;
+    private TextView infoTextView = null;
     private MaterialSearchView materialSearchView = null;
     private RecyclerView recyclerView = null;
     private RecyclerView.Adapter recyclerViewAdaper = null;
     private List<TrackWrapper> searchedTracks = null;
     private TrackWrapper currentTrack = null;
+    private List<String> recentSearches = null; // in the future will be persisted in a db
 
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
@@ -105,6 +106,9 @@ public class SearchFragment extends Fragment {
         toolbar.setTitleTextColor(Color.WHITE);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
+        infoTextView = (TextView) view.findViewById(R.id.tv_search_info);
+        infoTextView.setVisibility(View.GONE);
+
         recyclerView = (RecyclerView) view.findViewById(R.id.rv_search);
         recyclerView.addItemDecoration(new DividerItemDecoration(getContext()));
         recyclerViewAdaper = new TracksAdapter();
@@ -120,6 +124,12 @@ public class SearchFragment extends Fragment {
                         searchedTracks);
             }
         });
+
+        if (recentSearches == null && searchedTracks == null) {
+            recyclerView.setVisibility(View.GONE);
+            infoTextView.setText(getString(R.string.no_recent_searches));
+            infoTextView.setVisibility(View.VISIBLE);
+        }
 
         materialSearchView = (MaterialSearchView) view.findViewById(R.id.tb_search_view);
         materialSearchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
@@ -245,6 +255,8 @@ public class SearchFragment extends Fragment {
         protected void onPostExecute(TracksPager tracksPager) {
             if (tracksPager != null) {
                 searchedTracks = new ArrayList<>();
+                infoTextView.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
                 for (Track t : tracksPager.tracks.items) {
                     if (t.album.images.isEmpty())
                         continue;
