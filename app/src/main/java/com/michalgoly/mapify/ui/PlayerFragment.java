@@ -107,14 +107,15 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
             currentPlaybackState = getArguments().getParcelable(KEY_PLAYBACK_STATE);
             metadata = getArguments().getParcelable(KEY_METADATA);
-            List<Parcelable> trackList = getArguments().getParcelableArrayList(KEY_NEXT_TRACKS);
-            if (trackList != null) {
-                nextTracks = (LinkedList) new LinkedList<>(trackList);
+            List<Parcelable> nextTracksList = getArguments().getParcelableArrayList(KEY_NEXT_TRACKS);
+            if (nextTracksList != null) {
+                nextTracks = (LinkedList) new LinkedList<>(nextTracksList);
             } else {
                 nextTracks = new LinkedList<>();
             }
-            if (previousTracks != null) {
-                previousTracks = (LinkedList) new LinkedList<>(previousTracks);
+            List<Parcelable> previousTracksList = getArguments().getParcelableArrayList(KEY_PREVIOUS_TRACKS);
+            if (previousTracksList != null) {
+                previousTracks = (LinkedList) new LinkedList<>(previousTracksList);
             } else {
                 previousTracks = new LinkedList<>();
             }
@@ -322,9 +323,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             currentTrack = previousTracks.pollLast();
             metadata = null;
             currentPlaybackState = null;
-            Log.d(TAG, "previousTracks:");
-            for (TrackWrapper tw : previousTracks)
-                Log.d(TAG, tw.getTitle());
             playSong();
             updateUi();
         } else {

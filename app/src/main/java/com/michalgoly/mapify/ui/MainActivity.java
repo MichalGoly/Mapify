@@ -28,9 +28,6 @@ import com.spotify.sdk.android.player.SpotifyPlayer;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-
-import kaaes.spotify.webapi.android.models.Track;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener,
         PlayerFragment.OnPlayerFragmentInteractionListener,
@@ -229,8 +226,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         this.currentPlaybackState = null;
         this.metadata = null;
         this.nextTracks = new LinkedList<>();
-        updateTrackQueue(searchedTracks, currentTrack);
+        updateNextTracks(searchedTracks, currentTrack);
         this.previousTracks = new LinkedList<>();
+        updatePreviousTracks(searchedTracks, currentTrack);
         if (menuItemId != -1)
            bottomNavigationView.findViewById(menuItemId).performClick();
     }
@@ -245,7 +243,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                                             PlaybackState currentPlaybackState, Metadata metadata) {
         if (currentTrack != null) {
             this.currentTrack = currentTrack;
-            updateTrackQueue(this.searchedTracks, currentTrack);
+            updateNextTracks(this.searchedTracks, currentTrack);
+            updatePreviousTracks(this.searchedTracks, currentTrack);
         }
         if (currentPlaybackState != null)
             this.currentPlaybackState = currentPlaybackState;
@@ -255,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             bottomNavigationView.findViewById(menuItemId).performClick();
     }
 
-    private void updateTrackQueue(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
+    private void updateNextTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
         this.nextTracks = new LinkedList<>();
         if (searchedTracks != null && currentTrack != null) {
             boolean add = false;
@@ -266,9 +265,23 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                     this.nextTracks.add(track);
                 }
             }
-            Log.d(TAG, "trackQueue: " + nextTracks.toString());
+            Log.d(TAG, "nextTracks: " + nextTracks.toString());
         }
     }
 
+    private void updatePreviousTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
+        this.previousTracks = new LinkedList<>();
+        if (searchedTracks != null && currentTrack != null) {
+            boolean added = false;
+            for (TrackWrapper track : searchedTracks) {
+                if (track.getId().equals(currentTrack.getId())) {
+                    added = true;
+                } else if (!added) {
+                    this.previousTracks.add(track);
+                }
+            }
+            Log.d(TAG, "previousTracks: " + previousTracks.toString());
+        }
+    }
 
 }
