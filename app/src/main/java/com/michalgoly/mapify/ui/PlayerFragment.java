@@ -156,13 +156,9 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             public void onClick(View v) {
                 switch ((Integer) playPauseImageView.getTag()) {
                     case R.drawable.ic_play_arrow_black_24dp:
-//                        playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
-//                        playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
                         playSong();
                         break;
                     default:
-//                        playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-//                        playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
                         pauseSong();
                         break;
                 }
@@ -311,7 +307,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             metadata = null;
             currentPlaybackState = null;
             playSong();
-//            updateUi();
         } else {
             Log.d(TAG, "playNextSone(): trackQueue was null or empty");
         }
@@ -324,7 +319,6 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             metadata = null;
             currentPlaybackState = null;
             playSong();
-//            updateUi();
         } else {
             Log.d(TAG, "playPreviousSong(): previousTrack was null or empty");
         }
