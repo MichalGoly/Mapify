@@ -242,8 +242,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     @Override
     public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
-                                            PlaybackState currentPlaybackState, Metadata metadata,
-                                            LinkedList<TrackWrapper> previousTracks) {
+                                            PlaybackState currentPlaybackState, Metadata metadata) {
         if (currentTrack != null) {
             this.currentTrack = currentTrack;
             updateTrackQueue(this.searchedTracks, currentTrack);
@@ -252,8 +251,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             this.currentPlaybackState = currentPlaybackState;
         if (metadata != null)
             this.metadata = metadata;
-        if (previousTracks != null)
-            this.previousTracks = previousTracks;
         if (menuItemId != -1)
             bottomNavigationView.findViewById(menuItemId).performClick();
     }

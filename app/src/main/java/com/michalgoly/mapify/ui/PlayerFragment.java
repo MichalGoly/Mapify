@@ -260,7 +260,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         if (isAdded()) {
             Log.d(TAG, "mainActivityListener" + mainActivityListener);
             mainActivityListener.onPlayerFragmentInteraction(-1, currentTrack, currentPlaybackState,
-                    metadata, previousTracks);
+                    metadata);
         }
         // update the UI only on pause and play events
         if (playerEvent.name().equals(PLAYBACK_PAUSE) || playerEvent.name().equals(PLAYBACK_PLAY)) {
@@ -280,8 +280,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
      */
     public interface OnPlayerFragmentInteractionListener {
         void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack,
-                                         PlaybackState currentPlaybackState, Metadata metadata,
-                                         LinkedList<TrackWrapper> previousTracks);
+                                         PlaybackState currentPlaybackState, Metadata metadata);
     }
 
     private void playSong() {
