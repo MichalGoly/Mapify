@@ -202,6 +202,7 @@ public class SearchFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(TracksView holder, int position) {
+            holder.setIsRecyclable(false);
             if (searchedTracks != null) {
                 holder.title.setText(searchedTracks.get(position).getTitle());
                 holder.artists.setText(searchedTracks.get(position).getArtists());
