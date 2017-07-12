@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
@@ -24,6 +25,7 @@ import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Error;
 import com.spotify.sdk.android.player.Metadata;
 import com.spotify.sdk.android.player.PlaybackState;
+import com.spotify.sdk.android.player.Player;
 import com.spotify.sdk.android.player.PlayerEvent;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
@@ -36,13 +38,16 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerFragment extends Fragment implements SpotifyPlayer.NotificationCallback,
         ConnectionStateCallback {
 
     private static final String TAG = "PlayerFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
-    private static final String KEY_CURRENT_TRACK= "KEY_CURRENT_TRACK";
+    private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
     private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
     private static final String KEY_METADATA = "KEY_METADATA";
     private static final String KEY_NEXT_TRACKS = "KEY_NEXT_TRACKS";
@@ -61,8 +66,10 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private LinkedList<TrackWrapper> previousTracks = null;
 
     private OnPlayerFragmentInteractionListener mainActivityListener = null;
+    private ScheduledExecutorService timeUpdateService = Executors.newSingleThreadScheduledExecutor();
 
     private Toolbar toolbar = null;
+    private SeekBar trackProgressBar = null;
     private TextView titleTextView = null;
     private TextView artistsTextView = null;
     private ImageView playPauseImageView = null;
@@ -74,8 +81,9 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     }
 
     public static PlayerFragment newInstance(String accessToken, TrackWrapper currentTrack,
-            PlaybackState currentPlaybackState, Metadata metadata, LinkedList<TrackWrapper> nextTracks,
-            LinkedList<TrackWrapper> previousTracks) {
+                                             PlaybackState currentPlaybackState, Metadata metadata,
+                                             LinkedList<TrackWrapper> nextTracks,
+                                             LinkedList<TrackWrapper> previousTracks) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
@@ -128,8 +136,29 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         toolbar = (Toolbar) view.findViewById(R.id.tb_player_fragment);
         toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setTitle("");
-        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+        ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
 
+        trackProgressBar = (SeekBar) view.findViewById(R.id.sb_player);
+        trackProgressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // no-op
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Log.d(TAG, "onStopTrackingTouch called");
+                // update the currentSong to the current progress
+                if (currentTrack != null) {
+                    player.seekToPosition(null, seekBar.getProgress());
+                }
+            }
+        });
         titleTextView = (TextView) view.findViewById(R.id.tv_player_track);
         artistsTextView = (TextView) view.findViewById(R.id.tv_player_artists);
         previousImageView = (ImageView) view.findViewById(R.id.iv_previous);
@@ -167,6 +196,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         if (currentPlaybackState == null)
             playSong();
         updateUi();
+        startTimer();
         return view;
     }
 
@@ -265,6 +295,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         } else if (playerEvent.name().equals(PLAYBACK_AUDIO_DELIVERY_DONE)) {
             playNextSong();
         }
+        updateProgressBar();
     }
 
     @Override
@@ -336,6 +367,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             if (currentTrack != null) {
                 titleTextView.setText(currentTrack.getTitle());
                 artistsTextView.setText(currentTrack.getArtists());
+                trackProgressBar.setMax(currentTrack.getDuration().intValue());
                 new CoverTask().execute(currentTrack.getCoverUrl());
             } else {
                 titleTextView.setText(getActivity().getString(R.string.ask_user_search));
@@ -349,6 +381,31 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             } else {
                 playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
                 playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+            }
+        }
+    }
+
+    /**
+     * Schedules a task to update the trackProgressBar every 0.1s
+     */
+    private void startTimer() {
+        timeUpdateService.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                if (player != null && currentPlaybackState != null && trackProgressBar != null) {
+                    currentPlaybackState = player.getPlaybackState();
+                    trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
+                }
+            }
+        }, 0, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private void updateProgressBar() {
+        if (trackProgressBar != null) {
+            if (currentPlaybackState != null) {
+                trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
+            } else {
+                trackProgressBar.setProgress(0);
             }
         }
     }

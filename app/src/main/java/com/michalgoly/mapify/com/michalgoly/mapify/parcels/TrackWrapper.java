@@ -11,16 +11,18 @@ public class TrackWrapper implements Parcelable {
     private String artists = null;
     private String id = null;
     private String coverUrl = null;
+    private Long duration = null;
 
-    public TrackWrapper(String title, String artists, String id, String coverUrl) {
+    public TrackWrapper(String title, String artists, String id, String coverUrl, Long duration) {
         this.title = title;
         this.artists = artists;
         this.id = id;
         this.coverUrl = coverUrl;
+        this.duration = duration;
     }
 
     public static TrackWrapper fromTrack(Metadata.Track track) {
-        return new TrackWrapper(track.name, track.artistName, track.uri, track.albumCoverWebUrl);
+        return new TrackWrapper(track.name, track.artistName, track.uri, track.albumCoverWebUrl, track.durationMs);
     }
 
     public String getTitle() {
@@ -55,11 +57,20 @@ public class TrackWrapper implements Parcelable {
         this.coverUrl = coverUrl;
     }
 
+    public Long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Long duration) {
+        this.duration = duration;
+    }
+
     protected TrackWrapper(Parcel in) {
         title = in.readString();
         artists = in.readString();
         id = in.readString();
         coverUrl = in.readString();
+        duration = in.readLong();
     }
 
     @Override
@@ -73,6 +84,7 @@ public class TrackWrapper implements Parcelable {
         dest.writeString(artists);
         dest.writeString(id);
         dest.writeString(coverUrl);
+        dest.writeLong(duration);
     }
 
     @SuppressWarnings("unused")

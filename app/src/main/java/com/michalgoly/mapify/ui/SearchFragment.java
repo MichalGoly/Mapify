@@ -218,8 +218,8 @@ public class SearchFragment extends Fragment {
                 holder.artists.setText(searchedTracks.get(position).getArtists());
                 if (currentTrack != null
                         && searchedTracks.get(position).getId().equals(currentTrack.getId())) {
-                    holder.title.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccentDark));
-                    holder.artists.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccentDark));
+                    holder.title.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccent));
+                    holder.artists.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccent));
                 }
             } else {
                 Log.d(TAG, "searchedTrack was null in onBindViewHolder");
@@ -260,7 +260,6 @@ public class SearchFragment extends Fragment {
                 for (Track t : tracksPager.tracks.items) {
                     if (t.album.images.isEmpty())
                         continue;
-                    Log.d(TAG, "id: " + t.id + ", name: " + t.name + "cover: " + t.album.images.get(0).url);
                     String artists = "";
                     for (int i = 0; i < t.artists.size(); i++) {
                         if (i + 1 == t.artists.size())
@@ -270,7 +269,7 @@ public class SearchFragment extends Fragment {
                     }
                     String spotifyTrackPrefix = "spotify:track:";
                     searchedTracks.add(new TrackWrapper(t.name, artists, spotifyTrackPrefix + t.id,
-                            t.album.images.get(0).url));
+                            t.album.images.get(0).url, t.duration_ms));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
                 mainActivityListener.onSearchFragmentInteraction(-1, null, searchedTracks);
