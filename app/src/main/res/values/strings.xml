@@ -1,6 +1,3 @@
 <resources>
     <string name="app_name">Mapify</string>
-    <string name="toolbar_title">Mapify</string>
-    <string name="ask_user_search">Please search for a song first</string>
-    <string name="no_recent_searches">No recent searches found</string>
 </resources>
