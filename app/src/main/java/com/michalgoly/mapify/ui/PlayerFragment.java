@@ -1,22 +1,27 @@
 package com.michalgoly.mapify.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.media.session.MediaSession;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
@@ -64,6 +69,8 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     private Metadata metadata = null;
     private LinkedList<TrackWrapper> nextTracks = null;
     private LinkedList<TrackWrapper> previousTracks = null;
+    private MediaSession mediaSession = null;
+    private static int headsetClick = 0;
 
     private OnPlayerFragmentInteractionListener mainActivityListener = null;
     private ScheduledExecutorService timeUpdateService = Executors.newSingleThreadScheduledExecutor();
@@ -236,6 +243,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         super.onAttach(context);
         if (context instanceof OnPlayerFragmentInteractionListener) {
             mainActivityListener = (OnPlayerFragmentInteractionListener) context;
+            registerMediaSession(context);
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnPlayerFragmentInteractionListener");
@@ -408,6 +416,73 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
                 trackProgressBar.setProgress(0);
             }
         }
+    }
+
+    // MediaSession handles the headset interactions
+    private void registerMediaSession(final Context context) {
+        mediaSession = new MediaSession(context, TAG);
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
+                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mediaSession.setCallback(new MediaSession.Callback() {
+
+            private long DOUBLE_CLICK_DELAY = 500;
+
+            @Override
+            public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+                KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) {
+                    if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                        headsetClick++;
+                        Handler handler = new Handler();
+                        Runnable r = new Runnable() {
+
+                            @Override
+                            public void run() {
+                                if (headsetClick == 1) {
+                                    // single click
+                                    if (currentPlaybackState != null) {
+                                        if (currentPlaybackState.isPlaying) {
+                                            pauseSong();
+                                        } else {
+                                            playSong();
+                                        }
+                                    }
+                                } else if (headsetClick == 2) {
+                                    // double click
+                                    playNextSong();
+                                }
+                                headsetClick = 0;
+                            }
+                        };
+                        if (headsetClick == 1) {
+                            handler.postDelayed(r, DOUBLE_CLICK_DELAY);
+                        }
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            @Override
+            public void onPlay() {
+                super.onPlay();
+                playSong();
+            }
+
+            @Override
+            public void onPause() {
+                super.onPause();
+                pauseSong();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+                playNextSong();
+            }
+        });
+        mediaSession.setActive(true);
     }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
