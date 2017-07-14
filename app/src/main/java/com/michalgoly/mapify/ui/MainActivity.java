@@ -5,91 +5,82 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MenuItem;
 
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
 import com.spotify.sdk.android.authentication.LoginActivity;
 import com.spotify.sdk.android.player.Config;
-import com.spotify.sdk.android.player.ConnectionStateCallback;
-import com.spotify.sdk.android.player.Error;
-import com.spotify.sdk.android.player.PlayerEvent;
+import com.spotify.sdk.android.player.Metadata;
+import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class MainActivity extends AppCompatActivity implements SpotifyPlayer.NotificationCallback,
-        ConnectionStateCallback {
+import java.util.LinkedList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener,
+        PlayerFragment.OnPlayerFragmentInteractionListener,
+        MapFragment.OnMapFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
-
     private static final int REQUEST_INTERNET = 0;
+    private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
+    private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
 
-    private SpotifyPlayer player = null;
+    private BottomNavigationView bottomNavigationView = null;
+    private int bottomItemId = -1;
+
+    private String accessToken = null;
+    private TrackWrapper currentTrack = null;
+    private List<TrackWrapper> searchedTracks = null;
+    private PlaybackState currentPlaybackState = null;
+    private Metadata metadata = null;
+    private LinkedList<TrackWrapper> nextTracks = null;
+    private LinkedList<TrackWrapper> previousTracks = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (internetPermissionGranted()) {
+        if (savedInstanceState != null) {
+            Log.i(TAG, "Bundle was not null");
+            accessToken = savedInstanceState.getString(KEY_ACCESS_TOKEN);
+            bottomItemId = savedInstanceState.getInt(KEY_BOTTOM_MENU_ID);
+            if (bottomItemId != -1) {
+                selectFragment(bottomItemId);
+            }
+        }
+
+        if (!isLoggedIn() && internetPermissionGranted()) {
             authenticateSpotify();
+        } else {
+            if (accessToken == null) {
+                Log.w(TAG, "User did not login, exiting...");
+                finishAffinity();
+            }
         }
+
+        initUi(savedInstanceState);
     }
 
     @Override
-    public void onLoggedIn() {
-        Log.d(TAG, "User logged in to Spotify");
-        player.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
-    }
-
-    @Override
-    public void onLoggedOut() {
-        Log.d(TAG, "User logged out of Spotify");
-    }
-
-    @Override
-    public void onDestroy() {
-        Spotify.destroyPlayer(this);
-        super.onDestroy();
-    }
-
-    @Override
-    public void onLoginFailed(Error error) {
-        Log.d(TAG, "User failed to log into Spotify");
-    }
-
-    @Override
-    public void onTemporaryError() {
-        Log.d(TAG, "Spotify temporary error occurred");
-    }
-
-    @Override
-    public void onConnectionMessage(String message) {
-        Log.d(TAG, "Spotify connection message received: " + message);
-    }
-
-    @Override
-    public void onPlaybackEvent(PlayerEvent playerEvent) {
-        Log.d(TAG, "Playback event received: " + playerEvent.name());
-        switch (playerEvent) {
-            // Handle event type as necessary
-            default:
-                break;
-        }
-    }
-
-    @Override
-    public void onPlaybackError(Error error) {
-        Log.d(TAG, "Playback error received: " + error.name());
-        switch (error) {
-            // Handle error type as necessary
-            default:
-                break;
-        }
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        Log.i(TAG, "onSaveInstanceState saving accessToken: " + accessToken);
+        savedInstanceState.putString(KEY_ACCESS_TOKEN, accessToken);
+        savedInstanceState.putInt(KEY_BOTTOM_MENU_ID, bottomItemId);
+        super.onSaveInstanceState(savedInstanceState);
     }
 
     @Override
@@ -100,15 +91,13 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             switch (response.getType()) {
                 case TOKEN:
-                    Config playerConfig = new Config(this, response.getAccessToken(),
-                            getString(R.string.spotify_client_id));
+                    accessToken = response.getAccessToken();
+                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
                     Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
 
                         @Override
                         public void onInitialized(SpotifyPlayer spotifyPlayer) {
-                            player = spotifyPlayer;
-                            player.addConnectionStateCallback(MainActivity.this);
-                            player.addNotificationCallback(MainActivity.this);
+                            startSearchFragment();
                         }
 
                         @Override
@@ -149,6 +138,43 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         }
     }
 
+    private void initUi(Bundle savedInstanceState) {
+        bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_nav);
+        bottomNavigationView.setOnNavigationItemSelectedListener(
+                new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                selectFragment(item.getItemId());
+                return true;
+            }
+        });
+    }
+
+    private void selectFragment(int menuItemId) {
+        Fragment fragment = null;
+        switch (menuItemId) {
+            case R.id.bottom_menu_search:
+                if (accessToken != null)
+                 fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
+                else
+                 Log.e(TAG, "selectFragment() the accessToken was null!");
+                break;
+            case R.id.bottom_menu_player:
+                fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
+                        metadata, nextTracks, previousTracks);
+                break;
+            case R.id.bottom_menu_map:
+                fragment = MapFragment.newInstance();
+                break;
+            default:
+                Log.wtf(TAG, "Should never happen");
+                break;
+        }
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.fl_content, fragment).commit();
+    }
+
     private boolean internetPermissionGranted() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
             return true;
@@ -168,4 +194,94 @@ public class MainActivity extends AppCompatActivity implements SpotifyPlayer.Not
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, LoginActivity.REQUEST_CODE, request);
     }
+
+    private void startSearchFragment() {
+        Fragment fragment = null;
+        try {
+            fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to instantiate the SearchFragment", e);
+        }
+        getSupportFragmentManager().beginTransaction().replace(R.id.fl_content, fragment).commit();
+    }
+
+    private boolean isLoggedIn() {
+        return accessToken != null;
+    }
+
+    @Override
+    public void onSearchFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
+                                            List<TrackWrapper> searchedTracks) {
+        /*
+         * 1. Update the currentTrack
+         * 2. Update the searchedTracks
+         * 3. Make sure the old currentPlaybackState and metadata are wiped
+         * 4. Create a queue of tracks to play after the currentTrack
+         * 5. Grab the menuItemId and select the appropriate bottom bar menu item
+         */
+        if (currentTrack != null)
+           this.currentTrack = currentTrack;
+        if (searchedTracks != null)
+           this.searchedTracks = searchedTracks;
+        this.currentPlaybackState = null;
+        this.metadata = null;
+        this.nextTracks = new LinkedList<>();
+        updateNextTracks(searchedTracks, currentTrack);
+        this.previousTracks = new LinkedList<>();
+        updatePreviousTracks(searchedTracks, currentTrack);
+        if (menuItemId != -1)
+           bottomNavigationView.findViewById(menuItemId).performClick();
+    }
+
+    @Override
+    public void onMapFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
+        // currently no-op
+    }
+
+    @Override
+    public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
+                                            PlaybackState currentPlaybackState, Metadata metadata) {
+        if (currentTrack != null) {
+            this.currentTrack = currentTrack;
+            updateNextTracks(this.searchedTracks, currentTrack);
+            updatePreviousTracks(this.searchedTracks, currentTrack);
+        }
+        if (currentPlaybackState != null)
+            this.currentPlaybackState = currentPlaybackState;
+        if (metadata != null)
+            this.metadata = metadata;
+        if (menuItemId != -1)
+            bottomNavigationView.findViewById(menuItemId).performClick();
+    }
+
+    private void updateNextTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
+        this.nextTracks = new LinkedList<>();
+        if (searchedTracks != null && currentTrack != null) {
+            boolean add = false;
+            for (TrackWrapper track : searchedTracks) {
+                if (track.getId().equals(currentTrack.getId()))
+                    add = true;
+                else if (add) {
+                    this.nextTracks.add(track);
+                }
+            }
+            Log.d(TAG, "nextTracks: " + nextTracks.toString());
+        }
+    }
+
+    private void updatePreviousTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
+        this.previousTracks = new LinkedList<>();
+        if (searchedTracks != null && currentTrack != null) {
+            boolean added = false;
+            for (TrackWrapper track : searchedTracks) {
+                if (track.getId().equals(currentTrack.getId())) {
+                    added = true;
+                } else if (!added) {
+                    this.previousTracks.add(track);
+                }
+            }
+            Log.d(TAG, "previousTracks: " + previousTracks.toString());
+        }
+    }
+
 }
