@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -29,10 +31,16 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback,
         GoogleMap.OnMyLocationButtonClickListener {
@@ -42,7 +50,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private static final int REQUEST_LOCATION = 1;
     private static final long UPDATE_INTERVAL_MS = 10_000;
     private static final long FASTEST_UPDATE_INTERVAL_MS = UPDATE_INTERVAL_MS / 2;
+    private static final float SMALLEST_DISPLACEMENT_M = 10;
     private static final int REQUEST_CHECK_SETTINGS = 0x1;
+
+    private static final String KEY_POINTS = "KEY_POINTS";
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
@@ -51,16 +62,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private LocationSettingsRequest locationSettingsRequest = null;
     private LocationCallback locationCallback = null;
     private LocationRequest locationRequest = null;
-    private LocationResult currentLocation = null;
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-//    private static final String ARG_PARAM1 = "param1";
-//    private static final String ARG_PARAM2 = "param2";
-//
-//    // TODO: Rename and change types of parameters
-//    private String mParam1;
-//    private String mParam2;
+    private Location currentLocation = null;
+    private List<LatLng> points = null;
+    private Polyline path = null;
 
     private OnMapFragmentInteractionListener mainActivityListener = null;
 
@@ -68,20 +72,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment MapFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static MapFragment newInstance() {
+    public static MapFragment newInstance(List<LatLng> points) {
         MapFragment fragment = new MapFragment();
         Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
+        if (points != null)
+            args.putParcelableArrayList(KEY_POINTS, new ArrayList<>(points));
         fragment.setArguments(args);
         return fragment;
     }
@@ -90,9 +85,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
+            points = getArguments().getParcelableArrayList(KEY_POINTS);
         }
+        if (points == null)
+            points = new ArrayList<>();
     }
 
     @Override
@@ -104,14 +100,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             mapFragment.getMapAsync(this);
         else
             Log.d(TAG, "mapFragment was null");
+        redrawPath();
         return view;
     }
 
-//    public void onButtonPressed(Uri uri) {
-//        if (mListener != null) {
-//            mListener.onFragmentInteraction(uri);
-//        }
-//    }
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        bundle.putParcelableArrayList(KEY_POINTS, new ArrayList<>(points));
+    }
 
     @Override
     public void onAttach(Context context) {
@@ -167,12 +164,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                  * 2. Update the UI to draw the path
                  */
                 Log.d(TAG, "onLocationResult: " + locationResult.getLastLocation().toString());
-                currentLocation = locationResult;
+                currentLocation = locationResult.getLastLocation();
+                points.add(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
+                mainActivityListener.onMapFragmentInteraction(-1, null, points);
+                redrawPath();
             }
         };
         locationRequest = new LocationRequest();
         locationRequest.setInterval(UPDATE_INTERVAL_MS);
         locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
+        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M); 
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationSettingsRequest = new LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest).build();
@@ -224,7 +225,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
      * Interaction with the parent Activity
      */
     public interface OnMapFragmentInteractionListener {
-        void onMapFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+        void onMapFragmentInteraction(int menuitemId, TrackWrapper currentTrack, List<LatLng> points);
+    }
+
+    private void redrawPath() {
+        if (googleMap != null) {
+            googleMap.clear();
+            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true)
+                    .visible(true);
+            for (LatLng p : points)
+                options.add(p);
+            path = googleMap.addPolyline(options);
+        }
     }
 
     private void enableLocation() {
