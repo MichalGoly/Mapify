@@ -1,9 +1,13 @@
 package com.michalgoly.mapify.ui;
 
+import android.Manifest;
 import android.content.Context;
-import android.net.Uri;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,16 +16,18 @@ import android.view.ViewGroup;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 
-public class MapFragment extends Fragment implements OnMapReadyCallback {
+public class MapFragment extends Fragment implements OnMapReadyCallback,
+        GoogleMap.OnMyLocationButtonClickListener {
 
     private static final String TAG = "MapFragment";
 
+    private static final int REQUEST_LOCATION = 1;
+
     private SupportMapFragment mapFragment = null;
+    private GoogleMap googleMap = null;
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -102,7 +108,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        googleMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Hello world"));
+        this.googleMap = googleMap;
+        this.googleMap.setOnMyLocationButtonClickListener(this);
+        enableLocation();
+    }
+
+    @Override
+    public boolean onMyLocationButtonClick() {
+        return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode != REQUEST_LOCATION)
+            return;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            enableLocation();
+        } else {
+            Log.i(TAG, "No location permission, closing the app...");
+            getActivity().finishAffinity();
+        }
     }
 
     /**
@@ -110,5 +136,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      */
     public interface OnMapFragmentInteractionListener {
         void onMapFragmentInteraction(int menuitemId, TrackWrapper currentTrack);
+    }
+
+    private void enableLocation() {
+        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission to access the location is missing.
+            requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION);
+
+        } else if (googleMap != null) {
+            // Access to the location has been granted to the app.
+            googleMap.setMyLocationEnabled(true);
+        }
     }
 }

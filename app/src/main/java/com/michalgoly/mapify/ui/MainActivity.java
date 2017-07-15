@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
+    private static final int REQUEST_LOCATION = 1;
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
 
@@ -130,6 +131,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                     Log.i(TAG, "No internet permission, closing the app...");
                     finishAffinity();
                 }
+                break;
+            case REQUEST_LOCATION:
+                Log.d(TAG, "REQUEST_LOCATION ignore");
                 break;
             default:
                 Log.d(TAG, "Should never happen, closing the app");
