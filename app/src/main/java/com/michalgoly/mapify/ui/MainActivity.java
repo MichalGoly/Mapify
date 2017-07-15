@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
+    private static final int REQUEST_LOCATION = 1;
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
 
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private Metadata metadata = null;
     private LinkedList<TrackWrapper> nextTracks = null;
     private LinkedList<TrackWrapper> previousTracks = null;
+    private List<LatLng> points = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,6 +134,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                     finishAffinity();
                 }
                 break;
+            case REQUEST_LOCATION:
+                Log.d(TAG, "REQUEST_LOCATION ignore");
+                break;
             default:
                 Log.d(TAG, "Should never happen, closing the app");
                 finishAffinity();
@@ -165,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                         metadata, nextTracks, previousTracks);
                 break;
             case R.id.bottom_menu_map:
-                fragment = MapFragment.newInstance();
+                fragment = MapFragment.newInstance(points);
                 break;
             default:
                 Log.wtf(TAG, "Should never happen");
@@ -234,8 +240,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onMapFragmentInteraction(int menuItemId, TrackWrapper currentTrack) {
-        // currently no-op
+    public void onMapFragmentInteraction(int menuItemId, TrackWrapper currentTrack, List<LatLng> points) {
+        if (points != null)
+            this.points = points;
     }
 
     @Override
