@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -27,6 +28,7 @@ import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,6 +41,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private static final int REQUEST_LOCATION = 1;
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
+    private static final String KEY_SEARCHED_TRACKS = "KEY_SEARCHED_TRACKS";
+    private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
+    private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
+    private static final String KEY_METADATA = "KEY_METADATA";
+    private static final String KEY_NEXT_TRACKS = "KEY_NEXT_TRACKS";
+    private static final String KEY_PREVIOUS_TRACKS = "KEY_PREVIOUS_TRACKS";
 
     private BottomNavigationView bottomNavigationView = null;
     private int bottomItemId = -1;
@@ -64,6 +72,23 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             if (bottomItemId != -1) {
                 selectFragment(bottomItemId);
             }
+            searchedTracks = savedInstanceState.getParcelableArrayList(KEY_SEARCHED_TRACKS);
+            currentTrack = savedInstanceState.getParcelable(KEY_CURRENT_TRACK);
+            currentPlaybackState = savedInstanceState.getParcelable(KEY_PLAYBACK_STATE);
+            metadata = savedInstanceState.getParcelable(KEY_METADATA);
+            List<Parcelable> nextTracksList = savedInstanceState.getParcelableArrayList(KEY_NEXT_TRACKS);
+            if (nextTracksList != null) {
+                nextTracks = (LinkedList) new LinkedList<>(nextTracksList);
+            } else {
+                nextTracks = new LinkedList<>();
+            }
+            List<Parcelable> previousTracksList = savedInstanceState.getParcelableArrayList(KEY_PREVIOUS_TRACKS);
+            if (previousTracksList != null) {
+                previousTracks = (LinkedList) new LinkedList<>(previousTracksList);
+            } else {
+                previousTracks = new LinkedList<>();
+            }
+            metadata = savedInstanceState.getParcelable(KEY_METADATA);
         }
 
         if (!isLoggedIn() && internetPermissionGranted()) {
@@ -79,11 +104,23 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        Log.i(TAG, "onSaveInstanceState saving accessToken: " + accessToken);
-        savedInstanceState.putString(KEY_ACCESS_TOKEN, accessToken);
-        savedInstanceState.putInt(KEY_BOTTOM_MENU_ID, bottomItemId);
-        super.onSaveInstanceState(savedInstanceState);
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        bundle.putString(KEY_ACCESS_TOKEN, accessToken);
+        bundle.putInt(KEY_BOTTOM_MENU_ID, bottomItemId);
+        bundle.putParcelableArrayList(KEY_SEARCHED_TRACKS, new ArrayList<>(searchedTracks));
+        bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
+        if (nextTracks != null) {
+            bundle.putParcelableArrayList(KEY_NEXT_TRACKS, new ArrayList<>(nextTracks));
+        } else {
+            bundle.putParcelableArrayList(KEY_NEXT_TRACKS, null);
+        }
+        if (previousTracks != null) {
+            bundle.putParcelableArrayList(KEY_PREVIOUS_TRACKS, new ArrayList<>(previousTracks));
+        } else {
+            bundle.putParcelableArrayList(KEY_PREVIOUS_TRACKS, null);
+        }
+        bundle.putParcelable(KEY_METADATA, metadata);
     }
 
     @Override
@@ -192,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     private void authenticateSpotify() {
+        Log.d(TAG, "authenticateSpotify() called");
         String clientId = getString(R.string.spotify_client_id);
         String redirectUri = getString(R.string.spotify_auth_callback);
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(clientId,

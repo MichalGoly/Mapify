@@ -166,7 +166,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                 Log.d(TAG, "onLocationResult: " + locationResult.getLastLocation().toString());
                 currentLocation = locationResult.getLastLocation();
                 points.add(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
-                mainActivityListener.onMapFragmentInteraction(-1, null, points);
+                if (mainActivityListener != null)
+                    mainActivityListener.onMapFragmentInteraction(-1, null, points);
                 redrawPath();
             }
         };
