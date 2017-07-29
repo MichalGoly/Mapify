@@ -1,6 +1,5 @@
 package com.michalgoly.mapify.handlers;
 
-import android.media.session.MediaSession;
 import android.util.Log;
 
 import com.michalgoly.mapify.parcels.TrackWrapper;
@@ -29,8 +28,7 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     private TrackWrapper currentTrack = null;
     private LinkedList<TrackWrapper> previousTracks = null;
     private LinkedList<TrackWrapper> nextTracks = null;
-    private PlaybackState currentPlaybackState = null;
-    private Metadata metadata = null;
+    private boolean isSkip = false;
 
     private SpotifyHandler(Config config) {
         setPlayer(config);
@@ -51,18 +49,19 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     }
 
     public Metadata getMetadata() {
-        return metadata;
+        return player.getMetadata();
     }
 
     public PlaybackState getCurrentPlaybackState() {
-        return currentPlaybackState;
+        return player.getPlaybackState();
     }
 
     public void play() {
         if (currentTrack != null && player != null) {
-            if (currentPlaybackState != null) {
-                player.playUri(null, currentTrack.getId(), 0, (int) currentPlaybackState.positionMs);
+            if (getCurrentPlaybackState() != null && !isSkip) {
+                player.playUri(null, currentTrack.getId(), 0, (int) getCurrentPlaybackState().positionMs);
             } else {
+                isSkip = false;
                 player.playUri(null, currentTrack.getId(), 0, 0);
             }
         } else {
@@ -82,8 +81,7 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
         if (nextTracks != null && !nextTracks.isEmpty()) {
             previousTracks.offerLast(currentTrack);
             currentTrack = nextTracks.pollFirst();
-            metadata = null;
-            currentPlaybackState = null;
+            isSkip = true;
             play();
         } else {
             Log.d(TAG, "playNextSong(): trackQueue was null or empty");
@@ -94,8 +92,7 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
         if (previousTracks != null && !previousTracks.isEmpty()) {
             nextTracks.offerFirst(currentTrack);
             currentTrack = previousTracks.pollLast();
-            metadata = null;
-            currentPlaybackState = null;
+            isSkip = true;
             play();
         } else {
             Log.d(TAG, "playPreviousSong(): previousTrack was null or empty");
@@ -156,8 +153,6 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     @Override
     public void onPlaybackEvent(PlayerEvent playerEvent) {
         Log.d(TAG, "Playback event received: " + playerEvent.name());
-        currentPlaybackState = player.getPlaybackState();
-        metadata = player.getMetadata();
         if (playerEvent.name().equals(PLAYBACK_AUDIO_DELIVERY_DONE))
             playNext();
     }

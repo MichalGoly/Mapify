@@ -178,32 +178,41 @@ public class PlayerFragment extends Fragment {
          * 4. Otherwise, show the play button
          * 5. Update the song progress bar
          */
-        if (isAdded()) {
-            TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
-            PlaybackState currentPlaybackState = spotifyHandler.getCurrentPlaybackState();
-            if (currentTrack != null) {
-                titleTextView.setText(currentTrack.getTitle());
-                artistsTextView.setText(currentTrack.getArtists());
-                trackProgressBar.setMax(currentTrack.getDuration().intValue());
-                new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
-            } else {
-                titleTextView.setText(getActivity().getString(R.string.ask_user_search));
-                artistsTextView.setText("");
-                toolbar.setBackground(null);
-                toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
+        try {
+            if (isAdded()) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
+                        PlaybackState currentPlaybackState = spotifyHandler.getCurrentPlaybackState();
+                        if (currentTrack != null) {
+                            titleTextView.setText(currentTrack.getTitle());
+                            artistsTextView.setText(currentTrack.getArtists());
+                            trackProgressBar.setMax(currentTrack.getDuration().intValue());
+                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
+                        } else {
+                            titleTextView.setText(getActivity().getString(R.string.ask_user_search));
+                            artistsTextView.setText("");
+                            toolbar.setBackground(null);
+                            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
+                        }
+                        if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
+                            playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
+                            playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
+                        } else {
+                            playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                            playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+                        }
+                        if (currentPlaybackState != null) {
+                            trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
+                        } else {
+                            trackProgressBar.setProgress(0);
+                        }
+                    }
+                });
             }
-            if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
-                playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
-                playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
-            } else {
-                playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
-            }
-            if (currentPlaybackState != null) {
-                trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
-            } else {
-                trackProgressBar.setProgress(0);
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -214,7 +223,7 @@ public class PlayerFragment extends Fragment {
         timeUpdateService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-            updateUi();
+                updateUi();
             }
         }, 0, 100, TimeUnit.MILLISECONDS);
     }

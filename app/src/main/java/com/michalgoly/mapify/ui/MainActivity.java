@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                                     }
                                 } else if (headsetClick == 2) {
                                     // double click
-                                    spotifyHandler.play();
+                                    spotifyHandler.playNext();
                                 }
                                 headsetClick = 0;
                             }
