@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -42,19 +41,19 @@ public class SearchFragment extends Fragment {
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
 
-    private Toolbar toolbar = null;
-    private TextView infoTextView = null;
-    private MaterialSearchView materialSearchView = null;
-    private RecyclerView recyclerView = null;
-    private RecyclerView.Adapter recyclerViewAdaper = null;
-
+    private SpotifyHandler spotifyHandler = null;
     private List<TrackWrapper> searchedTracks = null;
-    private TrackWrapper currentTrack = null;
     private List<String> recentSearches = null; // in the future will be persisted in a db
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
     private SpotifyService spotifyService = null;
     private OnSearchFragmentInteractionListener mainActivityListener = null;
+
+    private Toolbar toolbar = null;
+    private TextView infoTextView = null;
+    private MaterialSearchView materialSearchView = null;
+    private RecyclerView recyclerView = null;
+    private RecyclerView.Adapter recyclerViewAdaper = null;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -82,7 +81,7 @@ public class SearchFragment extends Fragment {
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();
         }
-        currentTrack = SpotifyHandler.getInstance(null).getCurrentTrack();
+        spotifyHandler = SpotifyHandler.getInstance(null);
     }
 
     @Override
@@ -113,7 +112,8 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
                 Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
-                mainActivityListener.onSearchFragmentInteraction(R.id.bottom_menu_player;
+                spotifyHandler.updatePlaylist(searchedTracks, position);
+                mainActivityListener.onSearchFragmentInteraction(R.id.bottom_menu_player);
             }
         });
 
@@ -208,6 +208,7 @@ public class SearchFragment extends Fragment {
             if (searchedTracks != null) {
                 holder.title.setText(searchedTracks.get(position).getTitle());
                 holder.artists.setText(searchedTracks.get(position).getArtists());
+                TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
                 if (currentTrack != null
                         && searchedTracks.get(position).getId().equals(currentTrack.getId())) {
                     holder.title.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccent));
@@ -264,7 +265,6 @@ public class SearchFragment extends Fragment {
                             t.album.images.get(0).url, t.duration_ms));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
-                mainActivityListener.onSearchFragmentInteraction(-1);
             } else {
                 Log.d(TAG, "tracks was null");
             }

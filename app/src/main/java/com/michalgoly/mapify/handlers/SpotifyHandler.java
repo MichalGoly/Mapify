@@ -38,9 +38,8 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
 
     public static SpotifyHandler getInstance(Config config) {
         if (instance == null)
-            return new SpotifyHandler(config);
-        else
-            return instance;
+            instance =  new SpotifyHandler(config);
+        return instance;
     }
 
     public SpotifyPlayer getPlayer() {

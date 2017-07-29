@@ -37,7 +37,6 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.michalgoly.mapify.R;
-import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,11 +71,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         // Required empty public constructor
     }
 
-    public static MapFragment newInstance(List<LatLng> points) {
+    public static MapFragment newInstance() {
         MapFragment fragment = new MapFragment();
         Bundle args = new Bundle();
-        if (points != null)
-            args.putParcelableArrayList(KEY_POINTS, new ArrayList<>(points));
+//        if (points != null)
+//            args.putParcelableArrayList(KEY_POINTS, new ArrayList<>(points));
         fragment.setArguments(args);
         return fragment;
     }
@@ -167,7 +166,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                 currentLocation = locationResult.getLastLocation();
                 points.add(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
                 if (mainActivityListener != null)
-                    mainActivityListener.onMapFragmentInteraction(-1, null, points);
+                    mainActivityListener.onMapFragmentInteraction(-1);
                 redrawPath();
             }
         };

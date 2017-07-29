@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
                         @Override
                         public void onInitialized(SpotifyPlayer spotifyPlayer) {
+                            Log.i(TAG, "onInitialized() called");
                             spotifyHandler = SpotifyHandler.getInstance(playerConfig);
                             registerMediaSession(getApplicationContext());
                             startSearchFragment();
@@ -163,16 +164,15 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         switch (menuItemId) {
             case R.id.bottom_menu_search:
                 if (accessToken != null)
-                    fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
+                    fragment = SearchFragment.newInstance(accessToken);
                 else
                     Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
-                fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
-                        metadata, nextTracks, previousTracks);
+                fragment = PlayerFragment.newInstance();
                 break;
             case R.id.bottom_menu_map:
-                fragment = MapFragment.newInstance(points);
+                fragment = MapFragment.newInstance();
                 break;
             default:
                 Log.wtf(TAG, "Should never happen");
@@ -204,9 +204,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     private void startSearchFragment() {
+        Log.i(TAG, "startSearchFragment() called");
         Fragment fragment = null;
         try {
-            fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
+            fragment = SearchFragment.newInstance(accessToken);
         } catch (Exception e) {
             Log.e(TAG, "Failed to instantiate the SearchFragment", e);
         }
