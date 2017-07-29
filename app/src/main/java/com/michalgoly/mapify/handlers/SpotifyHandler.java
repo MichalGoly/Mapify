@@ -103,6 +103,9 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
      * Updates the current playlist and sets the current track to the index provided. Tracks before
      * the current track will be treated as previous tracks, tracks after the current track as next
      * tracks in the queue.
+     * <p>
+     * NOTE: Updating the playlist will start playing the new current track
+     *
      *
      * @param tracks List<TrackWrapper> - The list of the new tracks to play
      * @param index int - The position of the current track in the list provided
@@ -123,6 +126,8 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
             else if (i > index)
                 nextTracks.add(tracks.get(i));
         }
+        isSkip = true;
+        play();
     }
 
     @Override
