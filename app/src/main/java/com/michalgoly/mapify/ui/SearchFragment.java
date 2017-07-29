@@ -184,7 +184,7 @@ public class SearchFragment extends Fragment {
      * Interaction with the parent Activity
      */
     public interface OnSearchFragmentInteractionListener {
-        void onSearchFragmentInteraction(int menuitemId);
+        void onSearchFragmentInteraction(int menuItemId);
     }
 
     private class TracksAdapter extends RecyclerView.Adapter<TracksView> {

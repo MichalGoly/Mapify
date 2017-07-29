@@ -226,7 +226,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
      * Interaction with the parent Activity
      */
     public interface OnMapFragmentInteractionListener {
-        void onMapFragmentInteraction(int menuitemId, TrackWrapper currentTrack, List<LatLng> points);
+        void onMapFragmentInteraction(int menuitemId);
     }
 
     private void redrawPath() {

@@ -28,7 +28,8 @@ import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener,
+        PlayerFragment.OnPlayerFragmentInteractionListener, MapFragment.OnMapFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
@@ -127,8 +128,21 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onSearchFragmentInteraction(int menuitemId) {
+    public void onSearchFragmentInteraction(int menuItemId) {
+        if (menuItemId != -1)
+            bottomNavigationView.findViewById(menuItemId).performClick();
+    }
 
+    @Override
+    public void onMapFragmentInteraction(int menuitemId) {
+        if (menuitemId != -1)
+            bottomNavigationView.findViewById(menuitemId).performClick();
+    }
+
+    @Override
+    public void onPlayerFragmentInteraction(int menuitemId) {
+        if (menuitemId != -1)
+            bottomNavigationView.findViewById(menuitemId).performClick();
     }
 
     private void initUi() {
@@ -136,12 +150,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         bottomNavigationView.setOnNavigationItemSelectedListener(
                 new BottomNavigationView.OnNavigationItemSelectedListener() {
 
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                selectFragment(item.getItemId());
-                return true;
-            }
-        });
+                    @Override
+                    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                        selectFragment(item.getItemId());
+                        return true;
+                    }
+                });
     }
 
     private void selectFragment(int menuItemId) {
@@ -149,9 +163,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         switch (menuItemId) {
             case R.id.bottom_menu_search:
                 if (accessToken != null)
-                 fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
+                    fragment = SearchFragment.newInstance(accessToken, searchedTracks, currentTrack);
                 else
-                 Log.e(TAG, "selectFragment() the accessToken was null!");
+                    Log.e(TAG, "selectFragment() the accessToken was null!");
                 break;
             case R.id.bottom_menu_player:
                 fragment = PlayerFragment.newInstance(accessToken, currentTrack, currentPlaybackState,
@@ -184,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         String redirectUri = getString(R.string.spotify_auth_callback);
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(clientId,
                 AuthenticationResponse.Type.TOKEN, redirectUri);
-        builder.setScopes(new String[] {"streaming"});
+        builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, LoginActivity.REQUEST_CODE, request);
     }
@@ -270,4 +284,5 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         });
         mediaSession.setActive(true);
     }
+
 }
