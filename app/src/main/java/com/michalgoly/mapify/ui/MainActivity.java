@@ -20,6 +20,7 @@ import android.view.MenuItem;
 
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.SpotifyHandler;
+import com.michalgoly.mapify.utils.AlertsManager;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
@@ -90,18 +91,19 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                         @Override
                         public void onError(Throwable throwable) {
                             Log.e(TAG, "Failed to initialise the Spotify player", throwable);
-                            finishAffinity();
+                            AlertsManager.alertAndExit(MainActivity.this, "Failed to initialise the Spotify player");
                         }
                     });
                     break;
 
                 case ERROR:
                     Log.e(TAG, "The Spotify auth flow returned an error");
+                    AlertsManager.alertAndExit(this, "Unexpected error authenticating with Spotify");
                     break;
 
                 default:
-                    Log.e(TAG, "Failed to authenticate with Spotify, most likely the auth flow "
-                            + "was cancelled");
+                    AlertsManager.alertAndExit(this, "Failed to authenticate with Spotify, most"
+                            + " likely the auth flow was cancelled");
                     break;
             }
         }
@@ -114,16 +116,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     authenticateSpotify();
                 } else {
-                    Log.i(TAG, "No internet permission, closing the app...");
-                    finishAffinity();
+                    AlertsManager.alertAndExit(this, "No internet permission, closing the app...");
                 }
                 break;
             case REQUEST_LOCATION:
                 Log.d(TAG, "REQUEST_LOCATION ignore");
                 break;
             default:
-                Log.d(TAG, "Should never happen, closing the app");
-                finishAffinity();
+                AlertsManager.alertAndExit(this, "Should never happen, closing the app");
                 break;
         }
     }
