@@ -446,72 +446,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
         }
     }
 
-    // MediaSession handles the headset interactions
-    private void registerMediaSession(final Context context) {
-        mediaSession = new MediaSession(context, TAG);
-        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
-                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        mediaSession.setCallback(new MediaSession.Callback() {
 
-            private long DOUBLE_CLICK_DELAY = 500;
-
-            @Override
-            public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
-                KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-                if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) {
-                    if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                        headsetClick++;
-                        Handler handler = new Handler();
-                        Runnable r = new Runnable() {
-
-                            @Override
-                            public void run() {
-                                if (headsetClick == 1) {
-                                    // single click
-                                    if (currentPlaybackState != null) {
-                                        if (currentPlaybackState.isPlaying) {
-                                            pauseSong();
-                                        } else {
-                                            playSong();
-                                        }
-                                    }
-                                } else if (headsetClick == 2) {
-                                    // double click
-                                    playNextSong();
-                                }
-                                headsetClick = 0;
-                            }
-                        };
-                        if (headsetClick == 1) {
-                            handler.postDelayed(r, DOUBLE_CLICK_DELAY);
-                        }
-                    }
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-            @Override
-            public void onPlay() {
-                super.onPlay();
-                playSong();
-            }
-
-            @Override
-            public void onPause() {
-                super.onPause();
-                pauseSong();
-            }
-
-            @Override
-            public void onSkipToNext() {
-                super.onSkipToNext();
-                playNextSong();
-            }
-        });
-        mediaSession.setActive(true);
-    }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
         @Override

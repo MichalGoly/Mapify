@@ -24,7 +24,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
-import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.handlers.SpotifyHandler;
+import com.michalgoly.mapify.parcels.TrackWrapper;
 import com.michalgoly.mapify.utils.ItemClickSupport;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
@@ -40,18 +41,16 @@ public class SearchFragment extends Fragment {
 
     private static final String TAG = "SearchFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
-    private static final String KEY_SEARCHED_TRACKS = "KEY_SEARCHED_TRACKS";
-    private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
 
     private Toolbar toolbar = null;
     private TextView infoTextView = null;
     private MaterialSearchView materialSearchView = null;
     private RecyclerView recyclerView = null;
     private RecyclerView.Adapter recyclerViewAdaper = null;
+
     private List<TrackWrapper> searchedTracks = null;
     private TrackWrapper currentTrack = null;
     private List<String> recentSearches = null; // in the future will be persisted in a db
-
     private String accessToken = null;
     private SpotifyApi spotifyApi = null;
     private SpotifyService spotifyService = null;
@@ -65,13 +64,10 @@ public class SearchFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      */
-    public static SearchFragment newInstance(String accessToken, List<TrackWrapper> searchedTracks,
-                                             TrackWrapper currentTrack) {
+    public static SearchFragment newInstance(String accessToken) {
         SearchFragment fragment = new SearchFragment();
         Bundle args = new Bundle();
         args.putString(KEY_ACCESS_TOKEN, accessToken);
-        args.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
-        args.putParcelable(KEY_CURRENT_TRACK, currentTrack);
         fragment.setArguments(args);
         return fragment;
     }
@@ -85,17 +81,14 @@ public class SearchFragment extends Fragment {
             spotifyApi = new SpotifyApi();
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();
-            searchedTracks = getArguments().getParcelableArrayList(KEY_SEARCHED_TRACKS);
-            currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
         }
+        currentTrack = SpotifyHandler.getInstance(null).getCurrentTrack();
     }
 
     @Override
     public void onSaveInstanceState(Bundle bundle) {
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
-        bundle.putParcelableArrayList(KEY_SEARCHED_TRACKS, (ArrayList<? extends Parcelable>) searchedTracks);
-        bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
     }
 
     @Override
@@ -120,8 +113,7 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClicked(RecyclerView recyclerView, int position, View v) {
                 Log.d(TAG, "Item " + position + " with id " + searchedTracks.get(position).getId() + " clicked");
-                mainActivityListener.onSearchFragmentInteraction(R.id.bottom_menu_player, searchedTracks.get(position),
-                        searchedTracks);
+                mainActivityListener.onSearchFragmentInteraction(R.id.bottom_menu_player;
             }
         });
 
@@ -192,7 +184,7 @@ public class SearchFragment extends Fragment {
      * Interaction with the parent Activity
      */
     public interface OnSearchFragmentInteractionListener {
-        void onSearchFragmentInteraction(int menuitemId, TrackWrapper currentTrack, List<TrackWrapper> searchedTracks);
+        void onSearchFragmentInteraction(int menuitemId);
     }
 
     private class TracksAdapter extends RecyclerView.Adapter<TracksView> {
@@ -272,7 +264,7 @@ public class SearchFragment extends Fragment {
                             t.album.images.get(0).url, t.duration_ms));
                 }
                 recyclerViewAdaper.notifyDataSetChanged();
-                mainActivityListener.onSearchFragmentInteraction(-1, null, searchedTracks);
+                mainActivityListener.onSearchFragmentInteraction(-1);
             } else {
                 Log.d(TAG, "tracks was null");
             }

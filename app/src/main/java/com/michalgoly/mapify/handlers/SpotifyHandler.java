@@ -31,8 +31,6 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     private LinkedList<TrackWrapper> nextTracks = null;
     private PlaybackState currentPlaybackState = null;
     private Metadata metadata = null;
-    private MediaSession mediaSession = null;
-    private static int headsetClick = 0;
 
     private SpotifyHandler(Config config) {
         setPlayer(config);
@@ -161,6 +159,8 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
         Log.d(TAG, "Playback event received: " + playerEvent.name());
         currentPlaybackState = player.getPlaybackState();
         metadata = player.getMetadata();
+        if (playerEvent.name().equals(PLAYBACK_AUDIO_DELIVERY_DONE))
+            playNext();
     }
 
     @Override

@@ -1,11 +1,13 @@
 package com.michalgoly.mapify.ui;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.session.MediaSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -13,27 +15,20 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 
-import com.google.android.gms.maps.model.LatLng;
 import com.michalgoly.mapify.R;
-import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
 import com.michalgoly.mapify.handlers.SpotifyHandler;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
 import com.spotify.sdk.android.authentication.LoginActivity;
 import com.spotify.sdk.android.player.Config;
-import com.spotify.sdk.android.player.Metadata;
-import com.spotify.sdk.android.player.PlaybackState;
 import com.spotify.sdk.android.player.Spotify;
 import com.spotify.sdk.android.player.SpotifyPlayer;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
@@ -46,6 +41,8 @@ public class MainActivity extends AppCompatActivity  {
 
     private SpotifyHandler spotifyHandler = null;
     private String accessToken = null;
+    private MediaSession mediaSession = null;
+    private static int headsetClick = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,12 +75,13 @@ public class MainActivity extends AppCompatActivity  {
             switch (response.getType()) {
                 case TOKEN:
                     accessToken = response.getAccessToken();
-                    Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
+                    final Config playerConfig = new Config(this, accessToken, getString(R.string.spotify_client_id));
                     Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
 
                         @Override
                         public void onInitialized(SpotifyPlayer spotifyPlayer) {
-                            spotifyHandler = SpotifyHandler.getInstance(accessToken);
+                            spotifyHandler = SpotifyHandler.getInstance(playerConfig);
+                            registerMediaSession(getApplicationContext());
                             startSearchFragment();
                         }
 
@@ -126,6 +124,11 @@ public class MainActivity extends AppCompatActivity  {
                 finishAffinity();
                 break;
         }
+    }
+
+    @Override
+    public void onSearchFragmentInteraction(int menuitemId) {
+
     }
 
     private void initUi() {
@@ -200,5 +203,71 @@ public class MainActivity extends AppCompatActivity  {
         return accessToken != null;
     }
 
+    // MediaSession handles the headset interactions
+    private void registerMediaSession(final Context context) {
+        mediaSession = new MediaSession(context, TAG);
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
+                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mediaSession.setCallback(new MediaSession.Callback() {
 
+            private long DOUBLE_CLICK_DELAY = 500;
+
+            @Override
+            public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+                spotifyHandler = SpotifyHandler.getInstance(null);
+                KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) {
+                    if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                        headsetClick++;
+                        Handler handler = new Handler();
+                        Runnable r = new Runnable() {
+
+                            @Override
+                            public void run() {
+                                if (headsetClick == 1) {
+                                    // single click
+                                    if (spotifyHandler.getCurrentPlaybackState() != null) {
+                                        if (spotifyHandler.getCurrentPlaybackState().isPlaying) {
+                                            spotifyHandler.pause();
+                                        } else {
+                                            spotifyHandler.play();
+                                        }
+                                    }
+                                } else if (headsetClick == 2) {
+                                    // double click
+                                    spotifyHandler.play();
+                                }
+                                headsetClick = 0;
+                            }
+                        };
+                        if (headsetClick == 1) {
+                            handler.postDelayed(r, DOUBLE_CLICK_DELAY);
+                        }
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            @Override
+            public void onPlay() {
+                super.onPlay();
+                SpotifyHandler.getInstance(null).play();
+            }
+
+            @Override
+            public void onPause() {
+                super.onPause();
+                SpotifyHandler.getInstance(null).pause();
+            }
+
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+                SpotifyHandler.getInstance(null).playNext();
+            }
+        });
+        mediaSession.setActive(true);
+    }
 }
