@@ -116,21 +116,7 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
             Log.i(TAG, "Access token inside the PlayerFragment " + accessToken);
             Config config = new Config(getContext(), accessToken, getString(R.string.spotify_client_id));
             setPlayer(config);
-            currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
-            currentPlaybackState = getArguments().getParcelable(KEY_PLAYBACK_STATE);
-            metadata = getArguments().getParcelable(KEY_METADATA);
-            List<Parcelable> nextTracksList = getArguments().getParcelableArrayList(KEY_NEXT_TRACKS);
-            if (nextTracksList != null) {
-                nextTracks = (LinkedList) new LinkedList<>(nextTracksList);
-            } else {
-                nextTracks = new LinkedList<>();
-            }
-            List<Parcelable> previousTracksList = getArguments().getParcelableArrayList(KEY_PREVIOUS_TRACKS);
-            if (previousTracksList != null) {
-                previousTracks = (LinkedList) new LinkedList<>(previousTracksList);
-            } else {
-                previousTracks = new LinkedList<>();
-            }
+            setPlayerData(getArguments());
         }
     }
 
@@ -314,6 +300,51 @@ public class PlayerFragment extends Fragment implements SpotifyPlayer.Notificati
     public interface OnPlayerFragmentInteractionListener {
         void onPlayerFragmentInteraction(int menuitemId, TrackWrapper currentTrack,
                                          PlaybackState currentPlaybackState, Metadata metadata);
+    }
+
+    private void setPlayerData(Bundle bundle) {
+        /*
+         * 1. Data retrieved from the SpotifyPlayer takes precedence over the savedInstanceState
+         *    bundle, as the song could have changed while the Fragment was detached
+         * 2. If player not null
+         * 3. Check if it contains the required information
+         * 4. Use it if it does, otherwise use the bundled information
+         */
+        if (player != null) {
+            if (player.getMetadata() != null) {
+                metadata = player.getMetadata();
+            } else {
+                metadata = bundle.getParcelable(KEY_METADATA);
+            }
+            if (metadata.currentTrack != null) {
+                currentTrack = TrackWrapper.fromTrack(metadata.currentTrack);
+            } else {
+                currentTrack = bundle.getParcelable(KEY_CURRENT_TRACK);
+            }
+            if (player.getPlaybackState() != null) {
+                currentPlaybackState = player.getPlaybackState();
+            } else {
+                currentPlaybackState = bundle.getParcelable(KEY_PLAYBACK_STATE);
+            }
+
+        } else {
+            Log.e(TAG, "setPlayerData(bundle): player was null");
+        }
+        currentTrack = getArguments().getParcelable(KEY_CURRENT_TRACK);
+        currentPlaybackState = getArguments().getParcelable(KEY_PLAYBACK_STATE);
+        metadata = getArguments().getParcelable(KEY_METADATA);
+        List<Parcelable> nextTracksList = getArguments().getParcelableArrayList(KEY_NEXT_TRACKS);
+        if (nextTracksList != null) {
+            nextTracks = (LinkedList) new LinkedList<>(nextTracksList);
+        } else {
+            nextTracks = new LinkedList<>();
+        }
+        List<Parcelable> previousTracksList = getArguments().getParcelableArrayList(KEY_PREVIOUS_TRACKS);
+        if (previousTracksList != null) {
+            previousTracks = (LinkedList) new LinkedList<>(previousTracksList);
+        } else {
+            previousTracks = new LinkedList<>();
+        }
     }
 
     private void playSong() {

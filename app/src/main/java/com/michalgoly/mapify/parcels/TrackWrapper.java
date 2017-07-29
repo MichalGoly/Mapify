@@ -1,4 +1,4 @@
-package com.michalgoly.mapify.com.michalgoly.mapify.parcels;
+package com.michalgoly.mapify.parcels;
 
 import android.os.Parcel;
 import android.os.Parcelable;

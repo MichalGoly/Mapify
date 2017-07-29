@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import com.google.android.gms.maps.model.LatLng;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.handlers.SpotifyHandler;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
@@ -32,65 +33,24 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnSearchFragmentInteractionListener,
-        PlayerFragment.OnPlayerFragmentInteractionListener,
-        MapFragment.OnMapFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity  {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INTERNET = 0;
     private static final int REQUEST_LOCATION = 1;
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
     private static final String KEY_BOTTOM_MENU_ID = "KEY_BOTTOM_MENU";
-    private static final String KEY_SEARCHED_TRACKS = "KEY_SEARCHED_TRACKS";
-    private static final String KEY_CURRENT_TRACK = "KEY_CURRENT_TRACK";
-    private static final String KEY_PLAYBACK_STATE = "KEY_PLAYBACK_STATE";
-    private static final String KEY_METADATA = "KEY_METADATA";
-    private static final String KEY_NEXT_TRACKS = "KEY_NEXT_TRACKS";
-    private static final String KEY_PREVIOUS_TRACKS = "KEY_PREVIOUS_TRACKS";
 
     private BottomNavigationView bottomNavigationView = null;
     private int bottomItemId = -1;
 
+    private SpotifyHandler spotifyHandler = null;
     private String accessToken = null;
-    private TrackWrapper currentTrack = null;
-    private List<TrackWrapper> searchedTracks = null;
-    private PlaybackState currentPlaybackState = null;
-    private Metadata metadata = null;
-    private LinkedList<TrackWrapper> nextTracks = null;
-    private LinkedList<TrackWrapper> previousTracks = null;
-    private List<LatLng> points = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        if (savedInstanceState != null) {
-            Log.i(TAG, "Bundle was not null");
-            accessToken = savedInstanceState.getString(KEY_ACCESS_TOKEN);
-            bottomItemId = savedInstanceState.getInt(KEY_BOTTOM_MENU_ID);
-            if (bottomItemId != -1) {
-                selectFragment(bottomItemId);
-            }
-            searchedTracks = savedInstanceState.getParcelableArrayList(KEY_SEARCHED_TRACKS);
-            currentTrack = savedInstanceState.getParcelable(KEY_CURRENT_TRACK);
-            currentPlaybackState = savedInstanceState.getParcelable(KEY_PLAYBACK_STATE);
-            metadata = savedInstanceState.getParcelable(KEY_METADATA);
-            List<Parcelable> nextTracksList = savedInstanceState.getParcelableArrayList(KEY_NEXT_TRACKS);
-            if (nextTracksList != null) {
-                nextTracks = (LinkedList) new LinkedList<>(nextTracksList);
-            } else {
-                nextTracks = new LinkedList<>();
-            }
-            List<Parcelable> previousTracksList = savedInstanceState.getParcelableArrayList(KEY_PREVIOUS_TRACKS);
-            if (previousTracksList != null) {
-                previousTracks = (LinkedList) new LinkedList<>(previousTracksList);
-            } else {
-                previousTracks = new LinkedList<>();
-            }
-            metadata = savedInstanceState.getParcelable(KEY_METADATA);
-        }
-
         if (!isLoggedIn() && internetPermissionGranted()) {
             authenticateSpotify();
         } else {
@@ -99,8 +59,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 finishAffinity();
             }
         }
-
-        initUi(savedInstanceState);
+        initUi();
     }
 
     @Override
@@ -108,19 +67,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         super.onSaveInstanceState(bundle);
         bundle.putString(KEY_ACCESS_TOKEN, accessToken);
         bundle.putInt(KEY_BOTTOM_MENU_ID, bottomItemId);
-        bundle.putParcelableArrayList(KEY_SEARCHED_TRACKS, new ArrayList<>(searchedTracks));
-        bundle.putParcelable(KEY_CURRENT_TRACK, currentTrack);
-        if (nextTracks != null) {
-            bundle.putParcelableArrayList(KEY_NEXT_TRACKS, new ArrayList<>(nextTracks));
-        } else {
-            bundle.putParcelableArrayList(KEY_NEXT_TRACKS, null);
-        }
-        if (previousTracks != null) {
-            bundle.putParcelableArrayList(KEY_PREVIOUS_TRACKS, new ArrayList<>(previousTracks));
-        } else {
-            bundle.putParcelableArrayList(KEY_PREVIOUS_TRACKS, null);
-        }
-        bundle.putParcelable(KEY_METADATA, metadata);
     }
 
     @Override
@@ -137,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
                         @Override
                         public void onInitialized(SpotifyPlayer spotifyPlayer) {
+                            spotifyHandler = SpotifyHandler.getInstance(accessToken);
                             startSearchFragment();
                         }
 
@@ -181,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         }
     }
 
-    private void initUi(Bundle savedInstanceState) {
+    private void initUi() {
         bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_nav);
         bottomNavigationView.setOnNavigationItemSelectedListener(
                 new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -253,80 +200,5 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         return accessToken != null;
     }
 
-    @Override
-    public void onSearchFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
-                                            List<TrackWrapper> searchedTracks) {
-        /*
-         * 1. Update the currentTrack
-         * 2. Update the searchedTracks
-         * 3. Make sure the old currentPlaybackState and metadata are wiped
-         * 4. Create a queue of tracks to play after the currentTrack
-         * 5. Grab the menuItemId and select the appropriate bottom bar menu item
-         */
-        if (currentTrack != null)
-           this.currentTrack = currentTrack;
-        if (searchedTracks != null)
-           this.searchedTracks = searchedTracks;
-        this.currentPlaybackState = null;
-        this.metadata = null;
-        this.nextTracks = new LinkedList<>();
-        updateNextTracks(searchedTracks, currentTrack);
-        this.previousTracks = new LinkedList<>();
-        updatePreviousTracks(searchedTracks, currentTrack);
-        if (menuItemId != -1)
-           bottomNavigationView.findViewById(menuItemId).performClick();
-    }
-
-    @Override
-    public void onMapFragmentInteraction(int menuItemId, TrackWrapper currentTrack, List<LatLng> points) {
-        if (points != null)
-            this.points = points;
-    }
-
-    @Override
-    public void onPlayerFragmentInteraction(int menuItemId, TrackWrapper currentTrack,
-                                            PlaybackState currentPlaybackState, Metadata metadata) {
-        if (currentTrack != null) {
-            this.currentTrack = currentTrack;
-            updateNextTracks(this.searchedTracks, currentTrack);
-            updatePreviousTracks(this.searchedTracks, currentTrack);
-        }
-        if (currentPlaybackState != null)
-            this.currentPlaybackState = currentPlaybackState;
-        if (metadata != null)
-            this.metadata = metadata;
-        if (menuItemId != -1)
-            bottomNavigationView.findViewById(menuItemId).performClick();
-    }
-
-    private void updateNextTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
-        this.nextTracks = new LinkedList<>();
-        if (searchedTracks != null && currentTrack != null) {
-            boolean add = false;
-            for (TrackWrapper track : searchedTracks) {
-                if (track.getId().equals(currentTrack.getId()))
-                    add = true;
-                else if (add) {
-                    this.nextTracks.add(track);
-                }
-            }
-            Log.d(TAG, "nextTracks: " + nextTracks.toString());
-        }
-    }
-
-    private void updatePreviousTracks(List<TrackWrapper> searchedTracks, TrackWrapper currentTrack) {
-        this.previousTracks = new LinkedList<>();
-        if (searchedTracks != null && currentTrack != null) {
-            boolean added = false;
-            for (TrackWrapper track : searchedTracks) {
-                if (track.getId().equals(currentTrack.getId())) {
-                    added = true;
-                } else if (!added) {
-                    this.previousTracks.add(track);
-                }
-            }
-            Log.d(TAG, "previousTracks: " + previousTracks.toString());
-        }
-    }
 
 }
