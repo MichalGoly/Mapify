@@ -194,7 +194,7 @@ public class SearchFragment extends Fragment {
     private void bindSpotifyHandler(Context context) {
         Log.d(TAG, "bindSpotifyHandler(context) called");
         Intent intent = new Intent(context, SpotifyHandler.class);
-        boolean isBind = context.bindService(intent, new SpotifyHandlerConnection(), Context.BIND_IMPORTANT);
+        boolean isBind = context.bindService(intent, new SpotifyHandlerConnection(), Context.BIND_AUTO_CREATE);
         Log.d(TAG, "bindService() returned " + isBind);
     }
 

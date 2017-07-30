@@ -292,7 +292,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         Log.d(TAG, "bindSpotifyHandler() called");
         Intent intent = new Intent(MainActivity.this, SpotifyHandler.class);
         intent.putExtra(SpotifyHandler.ACCESS_TOKEN_EXTRA, accessToken);
-        boolean isBinded = bindService(intent, new SpotifyHandlerConnection(), Context.BIND_IMPORTANT);
+        boolean isBinded = bindService(intent, new SpotifyHandlerConnection(), Context.BIND_AUTO_CREATE);
         Log.d(TAG, "bindService() returned: " + isBinded);
     }
 

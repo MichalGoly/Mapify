@@ -148,7 +148,7 @@ public class PlayerFragment extends Fragment {
         super.onAttach(context);
         if (context instanceof OnPlayerFragmentInteractionListener) {
             mainActivityListener = (OnPlayerFragmentInteractionListener) context;
-            bindSpotifyHandler();
+            bindSpotifyHandler(context);
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnPlayerFragmentInteractionListener");
@@ -259,12 +259,11 @@ public class PlayerFragment extends Fragment {
         }
     }
 
-    private void bindSpotifyHandler() {
-        if (isAdded()) {
-            Intent intent = new Intent(getActivity(), SpotifyHandler.class);
-            getActivity().bindService(intent, new SpotifyHandlerConnection(),
-                    Context.BIND_IMPORTANT);
-        }
+    private void bindSpotifyHandler(Context context) {
+        Log.d(TAG, "bindSpotifyHandler(context) called");
+        Intent intent = new Intent(context, SpotifyHandler.class);
+        boolean isBind = context.bindService(intent, new SpotifyHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned " + isBind);
     }
 
     private class SpotifyHandlerConnection implements ServiceConnection {

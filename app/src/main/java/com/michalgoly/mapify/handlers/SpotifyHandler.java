@@ -30,7 +30,6 @@ public class SpotifyHandler extends Service implements SpotifyPlayer.Notificatio
 
     public static final String ACCESS_TOKEN_EXTRA = "ACCESS_TOKEN_EXTRA";
 
-//    private static SpotifyHandler instance = null;
     private IBinder binder = new ServiceBinder();
 
     private SpotifyPlayer player = null;
@@ -42,6 +41,7 @@ public class SpotifyHandler extends Service implements SpotifyPlayer.Notificatio
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind() called");
         String accessToken = intent.getStringExtra(ACCESS_TOKEN_EXTRA);
         if (accessToken != null)
             setPlayer(accessToken);
