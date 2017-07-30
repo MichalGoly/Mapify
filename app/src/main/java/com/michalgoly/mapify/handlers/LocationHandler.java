@@ -1,11 +1,9 @@
 package com.michalgoly.mapify.handlers;
 
-import android.app.Activity;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.location.Location;
 import android.os.Binder;
@@ -14,10 +12,8 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -37,8 +33,6 @@ import com.michalgoly.mapify.utils.AlertsManager;
 import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
-
-import static java.security.AccessController.getContext;
 
 public class LocationHandler extends Service {
 

@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             case REQUEST_LOCATION:
                 Log.d(TAG, "REQUEST_LOCATION");
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    locationHandler = LocationHandler.getInstance();
+                    bindLocationHandler();
                     startSearchFragment();
                 } else {
                     AlertsManager.alertAndExit(this, "No location permission, closing the app...");
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
         } else {
-            locationHandler = LocationHandler.getInstance(context);
+            bindLocationHandler();
             startSearchFragment();
         }
     }
@@ -317,6 +317,13 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         Log.d(TAG, "bindService() returned: " + isBinded);
     }
 
+    private void bindLocationHandler() {
+        Log.d(TAG, "bindLocationHandler() called");
+        Intent intent = new Intent(MainActivity.this, LocationHandler.class);
+        boolean isBinded = bindService(intent, new LocationHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned: " + isBinded);
+    }
+
     private class SpotifyHandlerConnection implements ServiceConnection {
 
         @Override
@@ -330,6 +337,22 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected() called");
             spotifyHandler = null;
+        }
+    }
+
+    private class LocationHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            LocationHandler.ServiceBinder binder = (LocationHandler.ServiceBinder) service;
+            locationHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            locationHandler = null;
         }
     }
 
