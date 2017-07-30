@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
         } else {
-            locationHandler = LocationHandler.getInstance();
+            locationHandler = LocationHandler.getInstance(context);
             startSearchFragment();
         }
     }

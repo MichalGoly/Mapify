@@ -44,7 +44,7 @@ public class LocationHandler {
 
     private LocationHandler(Context context) {
         this.context = context;
-        initLocationServices();
+//        initLocationServices();
     }
 
     public static LocationHandler getInstance(Context context) {
@@ -53,12 +53,12 @@ public class LocationHandler {
         return instance;
     }
 
-    private void initLocationServices() {
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient();
-        settingsClient = LocationServices.getSettingsClient(context);
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
+//    private void initLocationServices() {
+//        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient();
+//        settingsClient = LocationServices.getSettingsClient(context);
+//        locationCallback = new LocationCallback() {
+//            @Override
+//            public void onLocationResult(LocationResult locationResult) {
 //                /*
 //                 * 1. Add the locationResult to the List of locations
 //                 * 2. Update the UI to draw the path
@@ -69,58 +69,58 @@ public class LocationHandler {
 //                if (mainActivityListener != null)
 //                    mainActivityListener.onMapFragmentInteraction(-1);
 //                redrawPath();
-            }
-        };
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(UPDATE_INTERVAL_MS);
-        locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
-        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationSettingsRequest = new LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest).build();
-        startLocationUpdates();
-    }
+//            }
+//        };
+//        locationRequest = new LocationRequest();
+//        locationRequest.setInterval(UPDATE_INTERVAL_MS);
+//        locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
+//        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M);
+//        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        locationSettingsRequest = new LocationSettingsRequest.Builder()
+//                .addLocationRequest(locationRequest).build();
+//        startLocationUpdates();
+//    }
 
-    private void startLocationUpdates() {
-        settingsClient.checkLocationSettings(locationSettingsRequest)
-                .addOnSuccessListener(getActivity(), new OnSuccessListener<LocationSettingsResponse>() {
-                    @Override
-                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                        Log.i(TAG, "All location settings are satisfied.");
-                        try {
-                            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
-                                    locationCallback, Looper.myLooper());
-                        } catch (SecurityException e) {
-                            Log.wtf("Should never happen", e);
-                        }
-                    }
-                })
-                .addOnFailureListener(getActivity(), new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        int statusCode = ((ApiException) e).getStatusCode();
-                        switch (statusCode) {
-                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                                Log.i(TAG, "Location settings are not satisfied. Attempting to upgrade " +
-                                        "location settings ");
-                                try {
-                                    // Show the dialog by calling startResolutionForResult(), and check the
-                                    // result in onActivityResult().
-                                    ResolvableApiException rae = (ResolvableApiException) e;
-                                    rae.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
-                                } catch (IntentSender.SendIntentException sie) {
-                                    Log.i(TAG, "PendingIntent unable to execute request.");
-                                }
-                                break;
-                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                                String errorMessage = "Location settings are inadequate, and cannot be " +
-                                        "fixed here. Fix in Settings.";
-                                Log.e(TAG, errorMessage);
-                                Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                });
-    }
+//    private void startLocationUpdates() {
+//        settingsClient.checkLocationSettings(locationSettingsRequest)
+//                .addOnSuccessListener(getActivity(), new OnSuccessListener<LocationSettingsResponse>() {
+//                    @Override
+//                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+//                        Log.i(TAG, "All location settings are satisfied.");
+//                        try {
+//                            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
+//                                    locationCallback, Looper.myLooper());
+//                        } catch (SecurityException e) {
+//                            Log.wtf("Should never happen", e);
+//                        }
+//                    }
+//                })
+//                .addOnFailureListener(getActivity(), new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//                        int statusCode = ((ApiException) e).getStatusCode();
+//                        switch (statusCode) {
+//                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+//                                Log.i(TAG, "Location settings are not satisfied. Attempting to upgrade " +
+//                                        "location settings ");
+//                                try {
+//                                    // Show the dialog by calling startResolutionForResult(), and check the
+//                                    // result in onActivityResult().
+//                                    ResolvableApiException rae = (ResolvableApiException) e;
+//                                    rae.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
+//                                } catch (IntentSender.SendIntentException sie) {
+//                                    Log.i(TAG, "PendingIntent unable to execute request.");
+//                                }
+//                                break;
+//                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+//                                String errorMessage = "Location settings are inadequate, and cannot be " +
+//                                        "fixed here. Fix in Settings.";
+//                                Log.e(TAG, errorMessage);
+//                                Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
+//                        }
+//                    }
+//                });
+//    }
 
 
 }
