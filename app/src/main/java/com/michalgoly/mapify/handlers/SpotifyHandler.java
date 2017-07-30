@@ -2,7 +2,7 @@ package com.michalgoly.mapify.handlers;
 
 import android.util.Log;
 
-import com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Error;
@@ -60,9 +60,11 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
         if (currentTrack != null && player != null) {
             if (getCurrentPlaybackState() != null && !isSkip) {
                 player.playUri(null, currentTrack.getId(), 0, (int) getCurrentPlaybackState().positionMs);
+                // notify song resumed
             } else {
                 isSkip = false;
                 player.playUri(null, currentTrack.getId(), 0, 0);
+                // notify new song played
             }
         } else {
             Log.d(TAG, "playSong(): currentTrack or player was null");
