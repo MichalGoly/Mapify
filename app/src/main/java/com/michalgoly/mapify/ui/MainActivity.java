@@ -1,13 +1,16 @@
 package com.michalgoly.mapify.ui;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.session.MediaSession;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -86,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                         @Override
                         public void onInitialized(SpotifyPlayer spotifyPlayer) {
                             Log.i(TAG, "onInitialized() called");
-                            spotifyHandler = SpotifyHandler.getInstance(playerConfig);
+                            bindSpotifyHandler(accessToken);
                             registerMediaSession(getApplicationContext());
                             enableLocationServices();
                         }
@@ -250,7 +253,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             @Override
             public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
-                spotifyHandler = SpotifyHandler.getInstance(null);
                 KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
                 if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) {
                     if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
@@ -289,22 +291,46 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             @Override
             public void onPlay() {
                 super.onPlay();
-                SpotifyHandler.getInstance(null).play();
+                spotifyHandler.play();
             }
 
             @Override
             public void onPause() {
                 super.onPause();
-                SpotifyHandler.getInstance(null).pause();
+                spotifyHandler.pause();
             }
 
             @Override
             public void onSkipToNext() {
                 super.onSkipToNext();
-                SpotifyHandler.getInstance(null).playNext();
+                spotifyHandler.playNext();
             }
         });
         mediaSession.setActive(true);
+    }
+
+    private void bindSpotifyHandler(String accessToken) {
+        Log.d(TAG, "bindSpotifyHandler() called");
+        Intent intent = new Intent(MainActivity.this, SpotifyHandler.class);
+        intent.putExtra(SpotifyHandler.ACCESS_TOKEN_EXTRA, accessToken);
+        boolean isBinded = bindService(intent, new SpotifyHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned: " + isBinded);
+    }
+
+    private class SpotifyHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            SpotifyHandler.ServiceBinder binder = (SpotifyHandler.ServiceBinder) service;
+            spotifyHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            spotifyHandler = null;
+        }
     }
 
 }
