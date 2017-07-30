@@ -1,11 +1,18 @@
 package com.michalgoly.mapify.handlers;
 
 import android.app.Activity;
+import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentSender;
+import android.content.ServiceConnection;
 import android.location.Location;
+import android.os.Binder;
+import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -23,8 +30,17 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.michalgoly.mapify.model.LocationTrackWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
+import com.michalgoly.mapify.utils.AlertsManager;
 
-public class LocationHandler {
+import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
+
+import static java.security.AccessController.getContext;
+
+public class LocationHandler extends Service {
 
     private static final String TAG = "LocationHandler";
     private static final long UPDATE_INTERVAL_MS = 10_000;
@@ -32,95 +48,128 @@ public class LocationHandler {
     private static final float SMALLEST_DISPLACEMENT_M = 10;
     private static final int REQUEST_CHECK_SETTINGS = 0x1;
 
-    private static LocationHandler instance = null;
+    private IBinder binder = new ServiceBinder();
 
-    private Context context = null;
     private FusedLocationProviderClient fusedLocationProviderClient = null;
     private SettingsClient settingsClient = null;
     private LocationSettingsRequest locationSettingsRequest = null;
     private LocationCallback locationCallback = null;
     private LocationRequest locationRequest = null;
     private Location currentLocation = null;
+    private SpotifyHandler spotifyHandler = null;
+    private Map<Date, LocationTrackWrapper> locations = null;
 
-    private LocationHandler(Context context) {
-        this.context = context;
-//        initLocationServices();
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        init();
+        return binder;
     }
 
-    public static LocationHandler getInstance(Context context) {
-        if (instance == null)
-            instance = new LocationHandler(context);
-        return instance;
+    public class ServiceBinder extends Binder {
+        public LocationHandler getService() {
+            return LocationHandler.this;
+        }
     }
 
-//    private void initLocationServices() {
-//        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient();
-//        settingsClient = LocationServices.getSettingsClient(context);
-//        locationCallback = new LocationCallback() {
-//            @Override
-//            public void onLocationResult(LocationResult locationResult) {
-//                /*
-//                 * 1. Add the locationResult to the List of locations
-//                 * 2. Update the UI to draw the path
-//                 */
-//                Log.d(TAG, "onLocationResult: " + locationResult.getLastLocation().toString());
-//                currentLocation = locationResult.getLastLocation();
-//                points.add(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
-//                if (mainActivityListener != null)
-//                    mainActivityListener.onMapFragmentInteraction(-1);
-//                redrawPath();
-//            }
-//        };
-//        locationRequest = new LocationRequest();
-//        locationRequest.setInterval(UPDATE_INTERVAL_MS);
-//        locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
-//        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M);
-//        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//        locationSettingsRequest = new LocationSettingsRequest.Builder()
-//                .addLocationRequest(locationRequest).build();
-//        startLocationUpdates();
-//    }
+    public Map<Date, LocationTrackWrapper> getLocations() {
+        return locations;
+    }
 
-//    private void startLocationUpdates() {
-//        settingsClient.checkLocationSettings(locationSettingsRequest)
-//                .addOnSuccessListener(getActivity(), new OnSuccessListener<LocationSettingsResponse>() {
-//                    @Override
-//                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-//                        Log.i(TAG, "All location settings are satisfied.");
-//                        try {
-//                            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
-//                                    locationCallback, Looper.myLooper());
-//                        } catch (SecurityException e) {
-//                            Log.wtf("Should never happen", e);
-//                        }
-//                    }
-//                })
-//                .addOnFailureListener(getActivity(), new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        int statusCode = ((ApiException) e).getStatusCode();
-//                        switch (statusCode) {
-//                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-//                                Log.i(TAG, "Location settings are not satisfied. Attempting to upgrade " +
-//                                        "location settings ");
-//                                try {
-//                                    // Show the dialog by calling startResolutionForResult(), and check the
-//                                    // result in onActivityResult().
-//                                    ResolvableApiException rae = (ResolvableApiException) e;
-//                                    rae.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
-//                                } catch (IntentSender.SendIntentException sie) {
-//                                    Log.i(TAG, "PendingIntent unable to execute request.");
-//                                }
-//                                break;
-//                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-//                                String errorMessage = "Location settings are inadequate, and cannot be " +
-//                                        "fixed here. Fix in Settings.";
-//                                Log.e(TAG, errorMessage);
-//                                Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
-//                        }
-//                    }
-//                });
-//    }
+    private void init() {
+        Log.d(TAG, "init() called");
+        locations = new TreeMap<>();
+        bindSpotifyHandler();
+        initLocationServices();
+    }
+
+    private void initLocationServices() {
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        settingsClient = LocationServices.getSettingsClient(this);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                /*
+                 * 1. Every 10s
+                 * 2. If song is playing, create a LocationTrackWrapper and put it into a TreeMap
+                 *    sorted by Date
+                 * 3. Otherwise, do nothing
+                 */
+                currentLocation = locationResult.getLastLocation();
+                Log.d(TAG, "onLocationResult(locationResult): " + currentLocation.toString());
+                if (spotifyHandler.getCurrentPlaybackState() != null
+                        && spotifyHandler.getCurrentPlaybackState().isPlaying) {
+                    LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+                    TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
+                    locations.put(new Date(), new LocationTrackWrapper(latLng, currentTrack));
+                }
+            }
+        };
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(UPDATE_INTERVAL_MS);
+        locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
+        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationSettingsRequest = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest).build();
+        startLocationUpdates();
+    }
+
+    private void startLocationUpdates() {
+        settingsClient.checkLocationSettings(locationSettingsRequest)
+                .addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
+                    @Override
+                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                        Log.i(TAG, "All location settings are satisfied.");
+                        try {
+                            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
+                                    locationCallback, Looper.myLooper());
+                        } catch (SecurityException e) {
+                            Log.wtf("Should never happen", e);
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        int statusCode = ((ApiException) e).getStatusCode();
+                        switch (statusCode) {
+                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                                AlertsManager.alertAndExit(LocationHandler.this, "Location settings are not satisfied.");
+                                // TODO Attempt to upgrate location settings, rather than killing the app
+                                break;
+                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                                String errorMessage = "Location settings are inadequate, and cannot be " +
+                                        "fixed here. Fix in Settings.";
+                                Log.e(TAG, errorMessage);
+                                AlertsManager.alertAndExit(LocationHandler.this, errorMessage);
+                        }
+                    }
+                });
+    }
+
+    private void bindSpotifyHandler() {
+        Log.d(TAG, "bindSpotifyHandler() called");
+        Intent intent = new Intent(this, SpotifyHandler.class);
+        boolean isBind = bindService(intent, new SpotifyHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned " + isBind);
+    }
+
+    private class SpotifyHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            SpotifyHandler.ServiceBinder binder = (SpotifyHandler.ServiceBinder) service;
+            spotifyHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            spotifyHandler = null;
+        }
+    }
 
 
 }
