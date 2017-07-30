@@ -1,7 +1,13 @@
 package com.michalgoly.mapify.handlers;
 
+import android.app.Service;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.parcels.TrackWrapper;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
@@ -15,14 +21,16 @@ import com.spotify.sdk.android.player.SpotifyPlayer;
 import java.util.LinkedList;
 import java.util.List;
 
-public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, ConnectionStateCallback {
+public class SpotifyHandler extends Service implements SpotifyPlayer.NotificationCallback, ConnectionStateCallback {
 
     private static final String TAG = "SpotifyHandler";
     private static final String PLAYBACK_PLAY = "kSpPlaybackNotifyPlay";
     private static final String PLAYBACK_PAUSE = "kSpPlaybackNotifyPause";
     private static final String PLAYBACK_AUDIO_DELIVERY_DONE = "kSpPlaybackNotifyAudioDeliveryDone";
 
-    private static SpotifyHandler instance = null;
+    public static final String ACCESS_TOKEN_EXTRA = "ACCESS_TOKEN_EXTRA";
+
+    private IBinder binder = new ServiceBinder();
 
     private SpotifyPlayer player = null;
     private TrackWrapper currentTrack = null;
@@ -30,14 +38,20 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     private LinkedList<TrackWrapper> nextTracks = null;
     private boolean isSkip = false;
 
-    private SpotifyHandler(Config config) {
-        setPlayer(config);
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind() called");
+        String accessToken = intent.getStringExtra(ACCESS_TOKEN_EXTRA);
+        if (accessToken != null)
+            setPlayer(accessToken);
+        return binder;
     }
 
-    public static SpotifyHandler getInstance(Config config) {
-        if (instance == null)
-            instance =  new SpotifyHandler(config);
-        return instance;
+    public class ServiceBinder extends Binder {
+        public SpotifyHandler getService() {
+            return SpotifyHandler.this;
+        }
     }
 
     public SpotifyPlayer getPlayer() {
@@ -168,8 +182,8 @@ public class SpotifyHandler implements SpotifyPlayer.NotificationCallback, Conne
     }
 
 
-    private void setPlayer(Config config) {
-        Log.d(TAG, "Inside setPlayer" + config);
+    private void setPlayer(String accessToken) {
+        final Config config = new Config(this, accessToken, getString(R.string.spotify_client_id));
         Spotify.getPlayer(config, this, new SpotifyPlayer.InitializationObserver() {
 
             @Override
