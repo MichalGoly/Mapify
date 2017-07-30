@@ -1,11 +1,15 @@
 package com.michalgoly.mapify.ui;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -81,7 +85,6 @@ public class SearchFragment extends Fragment {
             spotifyApi.setAccessToken(accessToken);
             spotifyService = spotifyApi.getService();
         }
-        spotifyHandler = SpotifyHandler.getInstance(null);
     }
 
     @Override
@@ -96,7 +99,7 @@ public class SearchFragment extends Fragment {
         toolbar = (Toolbar) view.findViewById(R.id.tb_search_fragment);
         toolbar.setTitle(getString(R.string.toolbar_title));
         toolbar.setTitleTextColor(Color.WHITE);
-        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+        ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
 
         infoTextView = (TextView) view.findViewById(R.id.tv_search_info);
         infoTextView.setVisibility(View.GONE);
@@ -160,6 +163,7 @@ public class SearchFragment extends Fragment {
         super.onAttach(context);
         if (context instanceof OnSearchFragmentInteractionListener) {
             mainActivityListener = (OnSearchFragmentInteractionListener) context;
+            bindSpotifyHandler(context);
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnSearchFragmentInteractionListener");
@@ -177,7 +181,7 @@ public class SearchFragment extends Fragment {
         inflater.inflate(R.menu.tb_search_menu, menu);
         MenuItem item = menu.findItem(R.id.tb_action_search);
         materialSearchView.setMenuItem(item);
-        super.onCreateOptionsMenu(menu,inflater);
+        super.onCreateOptionsMenu(menu, inflater);
     }
 
     /**
@@ -185,6 +189,29 @@ public class SearchFragment extends Fragment {
      */
     public interface OnSearchFragmentInteractionListener {
         void onSearchFragmentInteraction(int menuItemId);
+    }
+
+    private void bindSpotifyHandler(Context context) {
+        Log.d(TAG, "bindSpotifyHandler(context) called");
+        Intent intent = new Intent(context, SpotifyHandler.class);
+        boolean isBind = context.bindService(intent, new SpotifyHandlerConnection(), Context.BIND_IMPORTANT);
+        Log.d(TAG, "bindService() returned " + isBind);
+    }
+
+    private class SpotifyHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            SpotifyHandler.ServiceBinder binder = (SpotifyHandler.ServiceBinder) service;
+            spotifyHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            spotifyHandler = null;
+        }
     }
 
     private class TracksAdapter extends RecyclerView.Adapter<TracksView> {

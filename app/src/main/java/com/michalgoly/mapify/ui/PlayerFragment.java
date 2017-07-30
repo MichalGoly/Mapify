@@ -1,10 +1,14 @@
 package com.michalgoly.mapify.ui;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -66,7 +70,6 @@ public class PlayerFragment extends Fragment {
         if (getArguments() != null) {
             // no-op for now
         }
-        spotifyHandler = SpotifyHandler.getInstance(null);
     }
 
     @Override
@@ -145,6 +148,7 @@ public class PlayerFragment extends Fragment {
         super.onAttach(context);
         if (context instanceof OnPlayerFragmentInteractionListener) {
             mainActivityListener = (OnPlayerFragmentInteractionListener) context;
+            bindSpotifyHandler();
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnPlayerFragmentInteractionListener");
@@ -252,6 +256,30 @@ public class PlayerFragment extends Fragment {
                     toolbar.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.colorPrimary));
                 }
             }
+        }
+    }
+
+    private void bindSpotifyHandler() {
+        if (isAdded()) {
+            Intent intent = new Intent(getActivity(), SpotifyHandler.class);
+            getActivity().bindService(intent, new SpotifyHandlerConnection(),
+                    Context.BIND_IMPORTANT);
+        }
+    }
+
+    private class SpotifyHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            SpotifyHandler.ServiceBinder binder = (SpotifyHandler.ServiceBinder) service;
+            spotifyHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            spotifyHandler = null;
         }
     }
 }
