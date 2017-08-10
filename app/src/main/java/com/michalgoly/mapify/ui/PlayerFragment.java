@@ -38,6 +38,7 @@ public class PlayerFragment extends Fragment {
 
     private static final String TAG = "PlayerFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
+    private static final int UI_UPDATE_DELAY_MS = 100;
 
     private SpotifyHandler spotifyHandler = null;
 
@@ -229,7 +230,7 @@ public class PlayerFragment extends Fragment {
             public void run() {
                 updateUi();
             }
-        }, 0, 100, TimeUnit.MILLISECONDS);
+        }, 0, UI_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
     }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {

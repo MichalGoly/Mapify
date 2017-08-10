@@ -30,7 +30,9 @@ import com.michalgoly.mapify.model.LocationTrackWrapper;
 import com.michalgoly.mapify.model.TrackWrapper;
 import com.michalgoly.mapify.utils.AlertsManager;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -51,7 +53,7 @@ public class LocationHandler extends Service {
     private LocationRequest locationRequest = null;
     private Location currentLocation = null;
     private SpotifyHandler spotifyHandler = null;
-    private Map<Date, LocationTrackWrapper> locations = null;
+    private List<LocationTrackWrapper> locations = null;
 
     @Nullable
     @Override
@@ -66,13 +68,13 @@ public class LocationHandler extends Service {
         }
     }
 
-    public Map<Date, LocationTrackWrapper> getLocations() {
+    public List<LocationTrackWrapper> getLocations() {
         return locations;
     }
 
     private void init() {
         Log.d(TAG, "init() called");
-        locations = new TreeMap<>();
+        locations = new ArrayList<>();
         bindSpotifyHandler();
         initLocationServices();
     }
@@ -95,7 +97,7 @@ public class LocationHandler extends Service {
                         && spotifyHandler.getCurrentPlaybackState().isPlaying) {
                     LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
                     TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
-                    locations.put(new Date(), new LocationTrackWrapper(latLng, currentTrack));
+                    locations.add(new LocationTrackWrapper(latLng, currentTrack, new Date()));
                 }
             }
         };
