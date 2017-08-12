@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -15,6 +16,9 @@ import android.view.ViewGroup;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
 import com.michalgoly.mapify.model.LocationTrackWrapper;
@@ -23,9 +27,13 @@ import com.michalgoly.mapify.model.TrackWrapper;
 import com.michalgoly.mapify.utils.AlertsManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -152,8 +160,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                      */
                     List<LocationTrackWrapper> locations = locationHandler.getLocations();
                     List<PolylineWrapper> polylines = extractPolylines(locations);
-                    for (PolylineWrapper p : polylines)
-                        drawToMap(p);
+                    drawToMap(polylines);
                 }
             });
         }
@@ -161,19 +168,66 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     private List<PolylineWrapper> extractPolylines(List<LocationTrackWrapper> locations) {
         List<PolylineWrapper> polylines = new ArrayList<>();
-        TrackWrapper currentTrack = null;
-        int currentIndex = -1;
-        for (LocationTrackWrapper ltw : locations) {
-            if (currentTrack == null) {
-                currentTrack = ltw.getTrackWrapper();
-                currentIndex = 0;
-                polylines.add(new PolylineWrapper())
+        if (locations != null) {
+            Collections.sort(locations, new Comparator<LocationTrackWrapper>() {
+                @Override
+                public int compare(LocationTrackWrapper o1, LocationTrackWrapper o2) {
+                    return o1.getDate().compareTo(o2.getDate());
+                }
+            });
+            PolylineWrapper wrapper = null;
+            TrackWrapper currentTrack = null;
+            List<LatLng> points = null;
+            for (int i = 0; i < locations.size(); i++) {
+                if (currentTrack == null) {
+                    // new
+                    currentTrack = locations.get(i).getTrackWrapper();
+                    points = new ArrayList<>();
+                    points.add(locations.get(i).getLatLng());
+                    wrapper = new PolylineWrapper();
+                    wrapper.setColor(@;
+                    wrapper.setStartDate(locations.get(i).getDate());
+                    wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
+                } else {
+                    if (currentTrack != locations.get(i).getTrackWrapper()) {
+                        // next
+                        currentTrack = locations.get(i).getTrackWrapper();
+                        points = new ArrayList<>();
+                        points.add(locations.get(i).getLatLng());
+                        wrapper = new PolylineWrapper();
+                        wrapper.setColor(Color.BLUE);
+                        wrapper.setStartDate(locations.get(i).getDate());
+                        wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
+                    } else {
+                        // continuation of the current track
+                        points.add(locations.get(i).getLatLng());
+                    }
+                }
+                // end date check
+                if (i + 1 < locations.size()) {
+                    if (currentTrack != locations.get(i + 1).getTrackWrapper()) {
+                        wrapper.setEndDate(locations.get(i).getDate());
+                        wrapper.setPoints(points);
+                        polylines.add(wrapper);
+                    }
+                } else {
+                    wrapper.setEndDate(locations.get(i).getDate());
+                    wrapper.setPoints(points);
+                    polylines.add(wrapper);
+                }
             }
         }
         return polylines;
     }
 
-    private void drawToMap(PolylineWrapper wrapper) {
+    private void drawToMap(List<PolylineWrapper> wrappers) {
+        for (PolylineWrapper pw : wrappers) {
+            googleMap.addPolyline(new PolylineOptions()
+                    .addAll(pw.getPoints())
+                    .color(pw.getColor())
+                    .clickable(true)
+                    .width(5));
+        }
 
     }
 

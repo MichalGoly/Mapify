@@ -1,40 +1,44 @@
 package com.michalgoly.mapify.model;
 
-import android.graphics.Color;
-
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 
 import java.util.Date;
+import java.util.List;
 
 public class PolylineWrapper {
 
-    private Polyline polyline = null;
-    private Color color = null;
+    private List<LatLng> points = null;
+    private int color = -1;
     private TrackWrapper trackWrapper = null;
     private Date startDate = null;
     private Date endDate = null;
 
-    public PolylineWrapper(Polyline polyline, Color color, TrackWrapper trackWrapper, Date startDate, Date endDate) {
-        this.polyline = polyline;
+    public PolylineWrapper() {
+        // empty constructor
+    }
+
+    public PolylineWrapper(List<LatLng> points, int color, TrackWrapper trackWrapper, Date startDate, Date endDate) {
+        this.points = points;
         this.color = color;
         this.trackWrapper = trackWrapper;
         this.startDate = startDate;
         this.endDate = endDate;
     }
 
-    public Polyline getPolyline() {
-        return polyline;
+    public List<LatLng> getPoints() {
+        return points;
     }
 
-    public void setPolyline(Polyline polyline) {
-        this.polyline = polyline;
+    public void setPoints(List<LatLng> points) {
+        this.points = points;
     }
 
-    public Color getColor() {
+    public int getColor() {
         return color;
     }
 
-    public void setColor(Color color) {
+    public void setColor(int color) {
         this.color = color;
     }
 

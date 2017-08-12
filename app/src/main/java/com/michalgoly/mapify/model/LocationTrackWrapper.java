@@ -7,7 +7,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Date;
 
-public class LocationTrackWrapper implements Parcelable{
+public class LocationTrackWrapper implements Parcelable {
 
     private LatLng latLng = null;
     private TrackWrapper trackWrapper = null;
