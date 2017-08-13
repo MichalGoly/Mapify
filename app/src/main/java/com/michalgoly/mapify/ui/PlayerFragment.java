@@ -194,7 +194,7 @@ public class PlayerFragment extends Fragment {
                             titleTextView.setText(currentTrack.getTitle());
                             artistsTextView.setText(currentTrack.getArtists());
                             trackProgressBar.setMax(currentTrack.getDuration().intValue());
-                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
+//                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
                         } else {
                             titleTextView.setText(getActivity().getString(R.string.ask_user_search));
                             artistsTextView.setText("");

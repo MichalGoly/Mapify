@@ -4,10 +4,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +17,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
@@ -29,11 +28,8 @@ import com.michalgoly.mapify.utils.AlertsManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +39,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     private static final String TAG = "MapFragment";
     private static final int MAP_UPDATE_DELAY_MS = 1000;
+    private static final int[] polylineColors = new int[]{R.color.materialAmber, R.color.materialBlue,
+            R.color.materialBlueGrey, R.color.materialBrown, R.color.materialCyan, R.color.materialDeepOrange,
+            R.color.materialDeepPurple, R.color.materialGreen, R.color.materialIndygo, R.color.materialGrey,
+            R.color.materialLightBlue, R.color.materialLightGreen, R.color.materialRed, R.color.materialOrange,
+            R.color.materialTeal, R.color.materialLime, R.color.materialPink, R.color.materialPurple};
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
@@ -50,6 +51,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
     private ScheduledExecutorService timeUpdateService = Executors.newSingleThreadScheduledExecutor();
+    private Random random = new Random();
 
     public MapFragment() {
         // Required empty public constructor
@@ -185,7 +187,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     points = new ArrayList<>();
                     points.add(locations.get(i).getLatLng());
                     wrapper = new PolylineWrapper();
-                    wrapper.setColor(@;
+                    wrapper.setColor(ContextCompat.getColor(getContext(), getRandomColor()));
                     wrapper.setStartDate(locations.get(i).getDate());
                     wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
                 } else {
@@ -195,7 +197,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                         points = new ArrayList<>();
                         points.add(locations.get(i).getLatLng());
                         wrapper = new PolylineWrapper();
-                        wrapper.setColor(Color.BLUE);
+                        wrapper.setColor(ContextCompat.getColor(getContext(), getRandomColor()));
                         wrapper.setStartDate(locations.get(i).getDate());
                         wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
                     } else {
@@ -238,6 +240,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         Log.d(TAG, "bindService() returned " + isBind);
     }
 
+    private int getRandomColor() {
+        return polylineColors[random.nextInt(polylineColors.length - 1)];
+    }
+
     private class LocationHandlerConnection implements ServiceConnection {
 
         @Override
@@ -253,27 +259,4 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             locationHandler = null;
         }
     }
-
-//    private void redrawPath() {
-//        if (googleMap != null) {
-//            googleMap.clear();
-//            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true)
-//                    .visible(true);
-//            for (LatLng p : points)
-//                options.add(p);
-//            path = googleMap.addPolyline(options);
-//        }
-//    }
-//
-//    private void enableLocation() {
-//        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
-//                != PackageManager.PERMISSION_GRANTED) {
-//            // Permission to access the location is missing.
-//            requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
-//                    REQUEST_LOCATION);
-//        } else if (googleMap != null) {
-//            // Access to the location has been granted to the app.
-//            googleMap.setMyLocationEnabled(true);
-//        }
-//    }
 }
