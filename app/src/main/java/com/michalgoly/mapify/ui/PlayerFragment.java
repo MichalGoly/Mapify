@@ -194,7 +194,7 @@ public class PlayerFragment extends Fragment {
                             titleTextView.setText(currentTrack.getTitle());
                             artistsTextView.setText(currentTrack.getArtists());
                             trackProgressBar.setMax(currentTrack.getDuration().intValue());
-//                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
+                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
                         } else {
                             titleTextView.setText(getActivity().getString(R.string.ask_user_search));
                             artistsTextView.setText("");
@@ -234,6 +234,7 @@ public class PlayerFragment extends Fragment {
     }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
+
         @Override
         protected Drawable doInBackground(String... params) {
             Drawable cover = null;
@@ -252,6 +253,7 @@ public class PlayerFragment extends Fragment {
             if (isAdded()) {
                 if (drawable != null) {
                     toolbar.setBackground(drawable);
+                    Log.d(TAG, "onPostExecute finished");
                 } else {
                     toolbar.setBackground(null);
                     toolbar.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.colorPrimary));
