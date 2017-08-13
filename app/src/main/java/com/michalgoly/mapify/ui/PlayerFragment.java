@@ -197,7 +197,7 @@ public class PlayerFragment extends Fragment {
                             titleTextView.setText(currentTrack.getTitle());
                             artistsTextView.setText(currentTrack.getArtists());
                             trackProgressBar.setMax(currentTrack.getDuration().intValue());
-                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
+                            setCover(currentTrack);
                         } else {
                             titleTextView.setText(getActivity().getString(R.string.ask_user_search));
                             artistsTextView.setText("");
@@ -234,6 +234,18 @@ public class PlayerFragment extends Fragment {
                 updateUi();
             }
         }, 0, UI_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
+    }
+
+    private void setCover(TrackWrapper currentTrack) {
+        if (isAdded()) {
+            File coverFile = getContext().getFileStreamPath(currentTrack.getId() + ".png");
+            if (coverFile.exists()) {
+                Drawable cover = Drawable.createFromPath(coverFile.toString());
+                toolbar.setBackground(cover);
+            } else {
+                new CoverTask().execute(currentTrack.getCoverUrl());
+            }
+        }
     }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
