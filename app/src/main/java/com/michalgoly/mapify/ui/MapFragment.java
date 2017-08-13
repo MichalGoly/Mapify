@@ -187,7 +187,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     points = new ArrayList<>();
                     points.add(locations.get(i).getLatLng());
                     wrapper = new PolylineWrapper();
-                    wrapper.setColor(ContextCompat.getColor(getContext(), getRandomColor()));
+                    wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
                     wrapper.setStartDate(locations.get(i).getDate());
                     wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
                 } else {
@@ -197,7 +197,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                         points = new ArrayList<>();
                         points.add(locations.get(i).getLatLng());
                         wrapper = new PolylineWrapper();
-                        wrapper.setColor(ContextCompat.getColor(getContext(), getRandomColor()));
+                        wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
                         wrapper.setStartDate(locations.get(i).getDate());
                         wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
                     } else {
@@ -240,8 +240,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         Log.d(TAG, "bindService() returned " + isBind);
     }
 
-    private int getRandomColor() {
-        return polylineColors[random.nextInt(polylineColors.length - 1)];
+    /**
+     * Generates a colour based on the track's unique id
+     *
+     * @param track TrackWrapper - The track containing the id to generate the colour from
+     * @return int - The resource id of the colour
+     */
+    private int getColor(TrackWrapper track) {
+        int hash = track.getId().hashCode();
+        if (hash < 0)
+            hash *= -1;
+        return polylineColors[hash % polylineColors.length];
     }
 
     private class LocationHandlerConnection implements ServiceConnection {
