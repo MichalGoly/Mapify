@@ -8,7 +8,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.michalgoly.mapify.R;
-import com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
 import com.spotify.sdk.android.player.Config;
 import com.spotify.sdk.android.player.ConnectionStateCallback;
 import com.spotify.sdk.android.player.Error;
@@ -74,9 +74,11 @@ public class SpotifyHandler extends Service implements SpotifyPlayer.Notificatio
         if (currentTrack != null && player != null) {
             if (getCurrentPlaybackState() != null && !isSkip) {
                 player.playUri(null, currentTrack.getId(), 0, (int) getCurrentPlaybackState().positionMs);
+                // notify song resumed
             } else {
                 isSkip = false;
                 player.playUri(null, currentTrack.getId(), 0, 0);
+                // notify new song played
             }
         } else {
             Log.d(TAG, "playSong(): currentTrack or player was null");

@@ -1,71 +1,59 @@
 package com.michalgoly.mapify.ui;
 
-import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
-import android.content.IntentSender;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.location.Location;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.Looper;
-import android.support.annotation.NonNull;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.ResolvableApiException;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.handlers.LocationHandler;
+import com.michalgoly.mapify.model.LocationTrackWrapper;
+import com.michalgoly.mapify.model.PolylineWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
+import com.michalgoly.mapify.utils.AlertsManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMyLocationButtonClickListener {
+        GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnPolylineClickListener {
 
     private static final String TAG = "MapFragment";
-
-    private static final int REQUEST_LOCATION = 1;
-    private static final long UPDATE_INTERVAL_MS = 10_000;
-    private static final long FASTEST_UPDATE_INTERVAL_MS = UPDATE_INTERVAL_MS / 2;
-    private static final float SMALLEST_DISPLACEMENT_M = 10;
-    private static final int REQUEST_CHECK_SETTINGS = 0x1;
-
-    private static final String KEY_POINTS = "KEY_POINTS";
+    private static final int MAP_UPDATE_DELAY_MS = 1000;
+    private static final int[] polylineColors = new int[]{R.color.materialAmber, R.color.materialBlue,
+            R.color.materialBlueGrey, R.color.materialBrown, R.color.materialCyan, R.color.materialDeepOrange,
+            R.color.materialDeepPurple, R.color.materialGreen, R.color.materialIndygo, R.color.materialGrey,
+            R.color.materialLightBlue, R.color.materialLightGreen, R.color.materialRed, R.color.materialOrange,
+            R.color.materialTeal, R.color.materialLime, R.color.materialPink, R.color.materialPurple};
+    private static final float POLYLINE_WIDTH = 5;
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
-    private FusedLocationProviderClient fusedLocationProviderClient = null;
-    private SettingsClient settingsClient = null;
-    private LocationSettingsRequest locationSettingsRequest = null;
-    private LocationCallback locationCallback = null;
-    private LocationRequest locationRequest = null;
-    private Location currentLocation = null;
-    private List<LatLng> points = null;
-    private Polyline path = null;
 
+    private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
+    private ScheduledExecutorService timeUpdateService = Executors.newSingleThreadScheduledExecutor();
+    private Random random = new Random();
 
     public MapFragment() {
         // Required empty public constructor
@@ -84,10 +72,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            points = getArguments().getParcelableArrayList(KEY_POINTS);
+            // no-op for now
+            // points = getArguments().getParcelableArrayList(KEY_POINTS);
         }
-        if (points == null)
-            points = new ArrayList<>();
+
     }
 
     @Override
@@ -99,14 +87,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             mapFragment.getMapAsync(this);
         else
             Log.d(TAG, "mapFragment was null");
-        redrawPath();
         return view;
     }
 
     @Override
     public void onSaveInstanceState(Bundle bundle) {
         super.onSaveInstanceState(bundle);
-        bundle.putParcelableArrayList(KEY_POINTS, new ArrayList<>(points));
     }
 
     @Override
@@ -114,6 +100,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         super.onAttach(context);
         if (context instanceof OnMapFragmentInteractionListener) {
             mainActivityListener = (OnMapFragmentInteractionListener) context;
+            bindLocationHandler(context);
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnMapFragmentInteractionListener");
@@ -130,8 +117,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
         this.googleMap.setOnMyLocationButtonClickListener(this);
-        enableLocation();
-        initLocationServices();
+        this.googleMap.setOnPolylineClickListener(this);
+        try {
+            this.googleMap.setMyLocationEnabled(true);
+        } catch (SecurityException e) {
+            Log.e(TAG, "location was not enabled!", e);
+            AlertsManager.alertAndExit(getContext(), "Location was not enabled!");
+        }
+        startTimer();
     }
 
     @Override
@@ -140,114 +133,147 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode != REQUEST_LOCATION)
-            return;
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            enableLocation();
-        } else {
-            Log.i(TAG, "No location permission, closing the app...");
-            getActivity().finishAffinity();
-        }
-    }
-
-    public void initLocationServices() {
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
-        settingsClient = LocationServices.getSettingsClient(getContext());
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                /*
-                 * 1. Add the locationResult to the List of locations
-                 * 2. Update the UI to draw the path
-                 */
-                Log.d(TAG, "onLocationResult: " + locationResult.getLastLocation().toString());
-                currentLocation = locationResult.getLastLocation();
-                points.add(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
-                if (mainActivityListener != null)
-                    mainActivityListener.onMapFragmentInteraction(-1);
-                redrawPath();
-            }
-        };
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(UPDATE_INTERVAL_MS);
-        locationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
-        locationRequest.setSmallestDisplacement(SMALLEST_DISPLACEMENT_M); 
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationSettingsRequest = new LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest).build();
-        startLocationUpdates();
-    }
-
-    public void startLocationUpdates() {
-        settingsClient.checkLocationSettings(locationSettingsRequest)
-                .addOnSuccessListener(getActivity(), new OnSuccessListener<LocationSettingsResponse>() {
-                    @Override
-                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                        Log.i(TAG, "All location settings are satisfied.");
-                        try {
-                            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
-                                    locationCallback, Looper.myLooper());
-                        } catch (SecurityException e) {
-                            Log.wtf("Should never happen", e);
-                        }
-                    }
-                })
-                .addOnFailureListener(getActivity(), new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        int statusCode = ((ApiException) e).getStatusCode();
-                        switch (statusCode) {
-                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                                Log.i(TAG, "Location settings are not satisfied. Attempting to upgrade " +
-                                        "location settings ");
-                                try {
-                                    // Show the dialog by calling startResolutionForResult(), and check the
-                                    // result in onActivityResult().
-                                    ResolvableApiException rae = (ResolvableApiException) e;
-                                    rae.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
-                                } catch (IntentSender.SendIntentException sie) {
-                                    Log.i(TAG, "PendingIntent unable to execute request.");
-                                }
-                                break;
-                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                                String errorMessage = "Location settings are inadequate, and cannot be " +
-                                        "fixed here. Fix in Settings.";
-                                Log.e(TAG, errorMessage);
-                                Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                });
+    public void onPolylineClick(Polyline polyline) {
+        polyline.setWidth(POLYLINE_WIDTH * 2);
     }
 
     /**
      * Interaction with the parent Activity
      */
     public interface OnMapFragmentInteractionListener {
-        void onMapFragmentInteraction(int menuitemId);
+        void onMapFragmentInteraction(int menuItemId);
     }
 
-    private void redrawPath() {
-        if (googleMap != null) {
-            googleMap.clear();
-            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true)
-                    .visible(true);
-            for (LatLng p : points)
-                options.add(p);
-            path = googleMap.addPolyline(options);
+    /**
+     * Schedules a task to update the map every 1s
+     */
+    private void startTimer() {
+        timeUpdateService.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                updateMap();
+            }
+        }, 0, MAP_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
+    }
+
+    private void updateMap() {
+        if (isAdded()) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    /*
+                     * 1. Retrieve the LocationTrackWrapper map from the LocationHandler
+                     * 2. Iterate over the map
+                     * 3. Create a list of PolyLineWrappers
+                     * 4. Iterate over the list and draw it to the map
+                     * 5. TODO cache it to prevent possible sluggishness
+                     */
+                    List<LocationTrackWrapper> locations = locationHandler.getLocations();
+                    List<PolylineWrapper> polylines = extractPolylines(locations);
+                    drawToMap(polylines);
+                }
+            });
         }
     }
 
-    private void enableLocation() {
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Permission to access the location is missing.
-            requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION);
-        } else if (googleMap != null) {
-            // Access to the location has been granted to the app.
-            googleMap.setMyLocationEnabled(true);
+    private List<PolylineWrapper> extractPolylines(List<LocationTrackWrapper> locations) {
+        List<PolylineWrapper> polylines = new ArrayList<>();
+        if (locations != null) {
+            Collections.sort(locations, new Comparator<LocationTrackWrapper>() {
+                @Override
+                public int compare(LocationTrackWrapper o1, LocationTrackWrapper o2) {
+                    return o1.getDate().compareTo(o2.getDate());
+                }
+            });
+            PolylineWrapper wrapper = null;
+            TrackWrapper currentTrack = null;
+            List<LatLng> points = null;
+            for (int i = 0; i < locations.size(); i++) {
+                if (currentTrack == null) {
+                    // new
+                    currentTrack = locations.get(i).getTrackWrapper();
+                    points = new ArrayList<>();
+                    points.add(locations.get(i).getLatLng());
+                    wrapper = new PolylineWrapper();
+                    wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
+                    wrapper.setStartDate(locations.get(i).getDate());
+                    wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
+                } else {
+                    if (currentTrack != locations.get(i).getTrackWrapper()) {
+                        // next
+                        currentTrack = locations.get(i).getTrackWrapper();
+                        points = new ArrayList<>();
+                        points.add(locations.get(i).getLatLng());
+                        wrapper = new PolylineWrapper();
+                        wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
+                        wrapper.setStartDate(locations.get(i).getDate());
+                        wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
+                    } else {
+                        // continuation of the current track
+                        points.add(locations.get(i).getLatLng());
+                    }
+                }
+                // end date check
+                if (i + 1 < locations.size()) {
+                    if (currentTrack != locations.get(i + 1).getTrackWrapper()) {
+                        wrapper.setEndDate(locations.get(i).getDate());
+                        wrapper.setPoints(points);
+                        polylines.add(wrapper);
+                    }
+                } else {
+                    wrapper.setEndDate(locations.get(i).getDate());
+                    wrapper.setPoints(points);
+                    polylines.add(wrapper);
+                }
+            }
+        }
+        return polylines;
+    }
+
+    private void drawToMap(List<PolylineWrapper> wrappers) {
+        for (PolylineWrapper pw : wrappers) {
+            googleMap.addPolyline(new PolylineOptions()
+                    .addAll(pw.getPoints())
+                    .color(pw.getColor())
+                    .clickable(true)
+                    .width(POLYLINE_WIDTH));
+        }
+
+    }
+
+    private void bindLocationHandler(Context context) {
+        Log.d(TAG, "bindLocationHandler(context) called");
+        Intent intent = new Intent(context, LocationHandler.class);
+        boolean isBind = context.bindService(intent, new LocationHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned " + isBind);
+    }
+
+    /**
+     * Generates a colour based on the track's unique id
+     *
+     * @param track TrackWrapper - The track containing the id to generate the colour from
+     * @return int - The resource id of the colour
+     */
+    private int getColor(TrackWrapper track) {
+        int hash = track.getId().hashCode();
+        if (hash < 0)
+            hash *= -1;
+        return polylineColors[hash % polylineColors.length];
+    }
+
+    private class LocationHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            LocationHandler.ServiceBinder binder = (LocationHandler.ServiceBinder) service;
+            locationHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            locationHandler = null;
         }
     }
 }

@@ -28,7 +28,7 @@ import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.SpotifyHandler;
-import com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
 import com.michalgoly.mapify.utils.ItemClickSupport;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 

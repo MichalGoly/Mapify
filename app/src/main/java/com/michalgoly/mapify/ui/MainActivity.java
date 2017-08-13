@@ -16,12 +16,14 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 
 import com.michalgoly.mapify.R;
+import com.michalgoly.mapify.handlers.LocationHandler;
 import com.michalgoly.mapify.handlers.SpotifyHandler;
 import com.michalgoly.mapify.utils.AlertsManager;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
@@ -45,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private int bottomItemId = -1;
 
     private SpotifyHandler spotifyHandler = null;
+    private LocationHandler locationHandler = null;
     private String accessToken = null;
     private MediaSession mediaSession = null;
     private static int headsetClick = 0;
@@ -88,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                             Log.i(TAG, "onInitialized() called");
                             bindSpotifyHandler(accessToken);
                             registerMediaSession(getApplicationContext());
-                            startSearchFragment();
+                            enableLocationServices();
                         }
 
                         @Override
@@ -123,10 +126,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 }
                 break;
             case REQUEST_LOCATION:
-                Log.d(TAG, "REQUEST_LOCATION ignore");
+                Log.d(TAG, "REQUEST_LOCATION");
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    bindLocationHandler();
+                    startSearchFragment();
+                } else {
+                    AlertsManager.alertAndExit(this, "No location permission, closing the app...");
+                }
                 break;
             default:
-                AlertsManager.alertAndExit(this, "Should never happen, closing the app");
+                AlertsManager.alertAndExit(this, "Should never happen, closing the app...");
                 break;
         }
     }
@@ -204,6 +213,18 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, LoginActivity.REQUEST_CODE, request);
+    }
+
+    private void enableLocationServices() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission to access the location is missing.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+        } else {
+            bindLocationHandler();
+            startSearchFragment();
+        }
     }
 
     private void startSearchFragment() {
@@ -296,6 +317,13 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         Log.d(TAG, "bindService() returned: " + isBinded);
     }
 
+    private void bindLocationHandler() {
+        Log.d(TAG, "bindLocationHandler() called");
+        Intent intent = new Intent(MainActivity.this, LocationHandler.class);
+        boolean isBinded = bindService(intent, new LocationHandlerConnection(), Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bindService() returned: " + isBinded);
+    }
+
     private class SpotifyHandlerConnection implements ServiceConnection {
 
         @Override
@@ -309,6 +337,22 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected() called");
             spotifyHandler = null;
+        }
+    }
+
+    private class LocationHandlerConnection implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected() called");
+            LocationHandler.ServiceBinder binder = (LocationHandler.ServiceBinder) service;
+            locationHandler = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected() called");
+            locationHandler = null;
         }
     }
 

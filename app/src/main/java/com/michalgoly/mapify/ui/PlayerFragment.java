@@ -23,7 +23,7 @@ import android.widget.TextView;
 
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.SpotifyHandler;
-import com.michalgoly.mapify.parcels.TrackWrapper;
+import com.michalgoly.mapify.model.TrackWrapper;
 import com.spotify.sdk.android.player.PlaybackState;
 
 import java.io.BufferedInputStream;
@@ -38,6 +38,7 @@ public class PlayerFragment extends Fragment {
 
     private static final String TAG = "PlayerFragment";
     private static final String KEY_ACCESS_TOKEN = "KEY_ACCESS_TOKEN";
+    private static final int UI_UPDATE_DELAY_MS = 100;
 
     private SpotifyHandler spotifyHandler = null;
 
@@ -229,10 +230,11 @@ public class PlayerFragment extends Fragment {
             public void run() {
                 updateUi();
             }
-        }, 0, 100, TimeUnit.MILLISECONDS);
+        }, 0, UI_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
     }
 
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
+
         @Override
         protected Drawable doInBackground(String... params) {
             Drawable cover = null;
@@ -251,6 +253,7 @@ public class PlayerFragment extends Fragment {
             if (isAdded()) {
                 if (drawable != null) {
                     toolbar.setBackground(drawable);
+                    Log.d(TAG, "onPostExecute finished");
                 } else {
                     toolbar.setBackground(null);
                     toolbar.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.colorPrimary));
