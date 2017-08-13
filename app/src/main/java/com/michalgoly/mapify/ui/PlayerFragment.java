@@ -27,9 +27,12 @@ import com.michalgoly.mapify.model.TrackWrapper;
 import com.spotify.sdk.android.player.PlaybackState;
 
 import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -194,7 +197,7 @@ public class PlayerFragment extends Fragment {
                             titleTextView.setText(currentTrack.getTitle());
                             artistsTextView.setText(currentTrack.getArtists());
                             trackProgressBar.setMax(currentTrack.getDuration().intValue());
-                            new CoverTask().execute(currentTrack.getCoverUrl()); // TODO this should be cached!
+                            setCover(currentTrack);
                         } else {
                             titleTextView.setText(getActivity().getString(R.string.ask_user_search));
                             artistsTextView.setText("");
@@ -233,17 +236,42 @@ public class PlayerFragment extends Fragment {
         }, 0, UI_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
     }
 
+    private void setCover(TrackWrapper currentTrack) {
+        if (isAdded()) {
+            File coverFile = getContext().getFileStreamPath(currentTrack.getId() + ".png");
+            if (coverFile.exists()) {
+                Drawable cover = Drawable.createFromPath(coverFile.toString());
+                toolbar.setBackground(cover);
+            } else {
+                new CoverTask().execute(currentTrack.getCoverUrl());
+            }
+        }
+    }
+
     private class CoverTask extends AsyncTask<String, Void, Drawable> {
 
         @Override
         protected Drawable doInBackground(String... params) {
+            // download a track cover and save it in the file storage
             Drawable cover = null;
-            TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
-            try (InputStream in = new BufferedInputStream((InputStream) new URL(
-                    currentTrack.getCoverUrl()).getContent())) {
-                cover = Drawable.createFromStream(in, "Spotify URL cover");
-            } catch (IOException e) {
-                Log.w(TAG, "Failed to read the cover url: " + currentTrack.getCoverUrl(), e);
+            if (isAdded()) {
+                TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
+                try (InputStream in = new BufferedInputStream((InputStream) new URL(
+                        currentTrack.getCoverUrl()).getContent())) {
+                    String filePath = currentTrack.getId() + ".png";
+                    try (FileOutputStream out = getContext().openFileOutput(filePath, Context.MODE_PRIVATE)) {
+                        byte[] buffer = new byte[1024];
+                        int len = in.read(buffer);
+                        while (len != -1) {
+                            out.write(buffer, 0, len);
+                            len = in.read(buffer);
+                        }
+                    }
+                    File coverFile = getContext().getFileStreamPath(filePath);
+                    cover = Drawable.createFromPath(coverFile.toString());
+                } catch (IOException e) {
+                    Log.w(TAG, "Failed to read the cover url: " + currentTrack.getCoverUrl(), e);
+                }
             }
             return cover;
         }
