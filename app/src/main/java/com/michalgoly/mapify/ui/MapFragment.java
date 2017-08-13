@@ -17,6 +17,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
@@ -35,7 +36,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMyLocationButtonClickListener {
+        GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnPolylineClickListener {
 
     private static final String TAG = "MapFragment";
     private static final int MAP_UPDATE_DELAY_MS = 1000;
@@ -44,6 +45,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             R.color.materialDeepPurple, R.color.materialGreen, R.color.materialIndygo, R.color.materialGrey,
             R.color.materialLightBlue, R.color.materialLightGreen, R.color.materialRed, R.color.materialOrange,
             R.color.materialTeal, R.color.materialLime, R.color.materialPink, R.color.materialPurple};
+    private static final float POLYLINE_WIDTH = 5;
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
@@ -115,6 +117,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
         this.googleMap.setOnMyLocationButtonClickListener(this);
+        this.googleMap.setOnPolylineClickListener(this);
         try {
             this.googleMap.setMyLocationEnabled(true);
         } catch (SecurityException e) {
@@ -127,6 +130,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     @Override
     public boolean onMyLocationButtonClick() {
         return false;
+    }
+
+    @Override
+    public void onPolylineClick(Polyline polyline) {
+        polyline.setWidth(POLYLINE_WIDTH * 2);
     }
 
     /**
@@ -228,7 +236,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     .addAll(pw.getPoints())
                     .color(pw.getColor())
                     .clickable(true)
-                    .width(5));
+                    .width(POLYLINE_WIDTH));
         }
 
     }
