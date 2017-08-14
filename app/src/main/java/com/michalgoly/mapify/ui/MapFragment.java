@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -13,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -46,6 +48,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             R.color.materialLightBlue, R.color.materialLightGreen, R.color.materialRed, R.color.materialOrange,
             R.color.materialTeal, R.color.materialLime, R.color.materialPink, R.color.materialPurple};
     private static final float POLYLINE_WIDTH = 5;
+    private static final float INITIAL_ZOOM = 15;
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
@@ -120,6 +123,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         this.googleMap.setOnPolylineClickListener(this);
         try {
             this.googleMap.setMyLocationEnabled(true);
+            LatLng currentLocation = new LatLng(locationHandler.getCurrentLocation().getLatitude(),
+                    locationHandler.getCurrentLocation().getLongitude());
+            this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, INITIAL_ZOOM));
         } catch (SecurityException e) {
             Log.e(TAG, "location was not enabled!", e);
             AlertsManager.alertAndExit(getContext(), "Location was not enabled!");

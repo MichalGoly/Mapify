@@ -72,6 +72,10 @@ public class LocationHandler extends Service {
         return locations;
     }
 
+    public Location getCurrentLocation() {
+        return currentLocation;
+    }
+
     private void init() {
         Log.d(TAG, "init() called");
         locations = new ArrayList<>();
