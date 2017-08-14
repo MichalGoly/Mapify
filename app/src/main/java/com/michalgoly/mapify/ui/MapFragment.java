@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -30,16 +31,16 @@ import com.michalgoly.mapify.utils.AlertsManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnPolylineClickListener {
+        GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnPolylineClickListener, GoogleMap.OnMapClickListener {
 
     private static final String TAG = "MapFragment";
     private static final int MAP_UPDATE_DELAY_MS = 1000;
@@ -49,11 +50,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             R.color.materialLightBlue, R.color.materialLightGreen, R.color.materialRed, R.color.materialOrange,
             R.color.materialTeal, R.color.materialLime, R.color.materialPink, R.color.materialPurple};
     private static final float POLYLINE_WIDTH = 5;
+    private static final float POLYLINE_SELECTED_WIDTH = POLYLINE_WIDTH * 3;
     private static final float INITIAL_ZOOM = 15;
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
     private Map<Polyline, PolylineWrapper> polylineWrapperMap = null;
+    private TrackWrapper clickedTrack = null;
 
     private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
@@ -123,6 +126,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         this.googleMap = googleMap;
         this.googleMap.setOnMyLocationButtonClickListener(this);
         this.googleMap.setOnPolylineClickListener(this);
+        this.googleMap.setOnMapClickListener(this);
         try {
             this.googleMap.setMyLocationEnabled(true);
             LatLng currentLocation = new LatLng(locationHandler.getCurrentLocation().getLatitude(),
@@ -142,7 +146,33 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public void onPolylineClick(Polyline polyline) {
-        polyline.setWidth(POLYLINE_WIDTH * 2);
+        /*
+         * 1. Select the polyline by making it visibly wider
+         * 2. Show a bubble tooltip above the clicked polyline with track artist, track name and cover
+         * 3. Keep track of the currently clicked track
+         */
+        Log.d(TAG, "POLYLINE: " + polyline + " clicked");
+//        polyline.setWidth(POLYLINE_SELECTED_WIDTH);
+        PolylineWrapper p = polylineWrapperMap.get(polyline);
+        Toast.makeText(getContext(), p.getTrackWrapper().getTitle(), Toast.LENGTH_SHORT).show();
+        clickedTrack = p.getTrackWrapper();
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        /*
+         * 1. If one of the polylines is currently selected, deselect it by making it thinner
+         * 2. Set the clickedTrack to null
+         */
+        if (clickedTrack != null && polylineWrapperMap != null) {
+            for (Map.Entry<Polyline, PolylineWrapper> e : polylineWrapperMap.entrySet()) {
+                if (e.getValue().getTrackWrapper().getId().equals(clickedTrack.getId())) {
+                    e.getKey().setWidth(POLYLINE_WIDTH);
+                    clickedTrack = null;
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -203,7 +233,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     points = new ArrayList<>();
                     points.add(locations.get(i).getLatLng());
                     wrapper = new PolylineWrapper();
-                    wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
+                    if (isAdded())
+                        wrapper.setColor(ContextCompat.getColor(getContext(), getColor(currentTrack)));
                     wrapper.setStartDate(locations.get(i).getDate());
                     wrapper.setTrackWrapper(locations.get(i).getTrackWrapper());
                 } else {
@@ -240,20 +271,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     private void drawToMap(List<PolylineWrapper> wrappers) {
         /*
-         * 1. Iterate over the wrappers
-         * 2. Draw each to the map
-         * 3. Cache each in the hash map
+         * 1. Clean previous Polylines from the map and the wrapper hash map
+         * 2. Iterate over the wrappers
+         * 3. Draw each to the map
+         * 4. Cache each in the hash map
          */
-        polylineWrapperMap = new HashMap<>();
+        if (polylineWrapperMap != null)
+            for (Polyline p : polylineWrapperMap.keySet())
+                p.remove();
+        polylineWrapperMap = new ConcurrentHashMap<>();
+        Log.d(TAG, wrappers.size() + " PolylineWrappers to draw");
         for (PolylineWrapper pw : wrappers) {
+            float pWidth = POLYLINE_WIDTH;
+            if (clickedTrack != null && pw.getTrackWrapper().getId().equals(clickedTrack.getId()))
+                pWidth = POLYLINE_SELECTED_WIDTH;
             Polyline polyline = googleMap.addPolyline(new PolylineOptions()
                     .addAll(pw.getPoints())
                     .color(pw.getColor())
                     .clickable(true)
-                    .width(POLYLINE_WIDTH));
+                    .width(pWidth));
             polylineWrapperMap.put(polyline, pw);
         }
-
     }
 
     private void bindLocationHandler(Context context) {
