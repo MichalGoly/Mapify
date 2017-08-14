@@ -4,7 +4,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -31,7 +30,9 @@ import com.michalgoly.mapify.utils.AlertsManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +53,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     private SupportMapFragment mapFragment = null;
     private GoogleMap googleMap = null;
+    private Map<Polyline, PolylineWrapper> polylineWrapperMap = null;
 
     private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
@@ -237,12 +239,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     private void drawToMap(List<PolylineWrapper> wrappers) {
+        /*
+         * 1. Iterate over the wrappers
+         * 2. Draw each to the map
+         * 3. Cache each in the hash map
+         */
+        polylineWrapperMap = new HashMap<>();
         for (PolylineWrapper pw : wrappers) {
-            googleMap.addPolyline(new PolylineOptions()
+            Polyline polyline = googleMap.addPolyline(new PolylineOptions()
                     .addAll(pw.getPoints())
                     .color(pw.getColor())
                     .clickable(true)
                     .width(POLYLINE_WIDTH));
+            polylineWrapperMap.put(polyline, pw);
         }
 
     }
