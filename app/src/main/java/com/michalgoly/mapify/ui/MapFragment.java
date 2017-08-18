@@ -18,9 +18,15 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.PolyUtil;
+import com.google.maps.android.SphericalUtil;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
 import com.michalgoly.mapify.model.LocationTrackWrapper;
@@ -61,7 +67,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
     private ScheduledExecutorService timeUpdateService = Executors.newSingleThreadScheduledExecutor();
-    private Random random = new Random();
 
     public MapFragment() {
         // Required empty public constructor
@@ -131,7 +136,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             this.googleMap.setMyLocationEnabled(true);
             LatLng currentLocation = new LatLng(locationHandler.getCurrentLocation().getLatitude(),
                     locationHandler.getCurrentLocation().getLongitude());
-            this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, INITIAL_ZOOM));
+            this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
         } catch (SecurityException e) {
             Log.e(TAG, "location was not enabled!", e);
             AlertsManager.alertAndExit(getContext(), "Location was not enabled!");
@@ -155,6 +160,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 //        polyline.setWidth(POLYLINE_SELECTED_WIDTH);
         PolylineWrapper p = polylineWrapperMap.get(polyline);
         Toast.makeText(getContext(), p.getTrackWrapper().getTitle(), Toast.LENGTH_SHORT).show();
+        showTooltip(polyline);
         clickedTrack = p.getTrackWrapper();
     }
 
@@ -312,6 +318,56 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         if (hash < 0)
             hash *= -1;
         return polylineColors[hash % polylineColors.length];
+    }
+
+    private void showTooltip(Polyline polyline) {
+        if (polyline.getPoints().size() > 3) {
+            float middle = (float) SphericalUtil.computeLength(polyline.getPoints());
+            LatLng tooltipLatLng = extrapolate(polyline.getPoints(), polyline.getPoints().get(0), middle);
+            googleMap.addMarker(new MarkerOptions().position(tooltipLatLng).icon(
+                    BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+            CameraPosition cameraPosition = new CameraPosition.Builder().target(tooltipLatLng).zoom(18).build();
+            googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+        }
+    }
+
+    // https://stackoverflow.com/a/38616162
+    private LatLng extrapolate(List<LatLng> path, LatLng origin, float distance) {
+        LatLng extrapolated = null;
+        if (!PolyUtil.isLocationOnPath(origin, path, false, 1)) {
+            return null;
+        }
+        float accDistance = 0f;
+        boolean foundStart = false;
+        List<LatLng> segment = new ArrayList<>();
+        for (int i = 0; i < path.size() - 1; i++) {
+            LatLng segmentStart = path.get(i);
+            LatLng segmentEnd = path.get(i + 1);
+            segment.clear();
+            segment.add(segmentStart);
+            segment.add(segmentEnd);
+            double currentDistance = 0d;
+            if (!foundStart) {
+                if (PolyUtil.isLocationOnPath(origin, segment, false, 1)) {
+                    foundStart = true;
+                    currentDistance = SphericalUtil.computeDistanceBetween(origin, segmentEnd);
+                    if (currentDistance > distance) {
+                        double heading = SphericalUtil.computeHeading(origin, segmentEnd);
+                        extrapolated = SphericalUtil.computeOffset(origin, distance - accDistance, heading);
+                        break;
+                    }
+                }
+            } else {
+                currentDistance = SphericalUtil.computeDistanceBetween(segmentStart, segmentEnd);
+                if (currentDistance + accDistance > distance) {
+                    double heading = SphericalUtil.computeHeading(segmentStart, segmentEnd);
+                    extrapolated = SphericalUtil.computeOffset(segmentStart, distance - accDistance, heading);
+                    break;
+                }
+            }
+            accDistance += currentDistance;
+        }
+        return extrapolated;
     }
 
     private class LocationHandlerConnection implements ServiceConnection {
