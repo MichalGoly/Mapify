@@ -12,20 +12,18 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
@@ -39,7 +37,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -49,7 +46,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnPolylineClickListener, GoogleMap.OnMapClickListener {
 
     private static final String TAG = "MapFragment";
-    private static final int MAP_UPDATE_DELAY_MS = 1000;
+    private static final int MAP_UPDATE_DELAY_MS = 100;
     private static final int[] polylineColors = new int[]{R.color.materialAmber, R.color.materialBlue,
             R.color.materialBlueGrey, R.color.materialBrown, R.color.materialCyan, R.color.materialDeepOrange,
             R.color.materialDeepPurple, R.color.materialGreen, R.color.materialIndygo, R.color.materialGrey,
@@ -63,6 +60,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private GoogleMap googleMap = null;
     private Map<Polyline, PolylineWrapper> polylineWrapperMap = null;
     private TrackWrapper clickedTrack = null;
+    private Marker currentMarker = null;
 
     private LocationHandler locationHandler = null;
     private OnMapFragmentInteractionListener mainActivityListener = null;
@@ -157,11 +155,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
          * 3. Keep track of the currently clicked track
          */
         Log.d(TAG, "POLYLINE: " + polyline + " clicked");
-//        polyline.setWidth(POLYLINE_SELECTED_WIDTH);
-        PolylineWrapper p = polylineWrapperMap.get(polyline);
-        Toast.makeText(getContext(), p.getTrackWrapper().getTitle(), Toast.LENGTH_SHORT).show();
-        showTooltip(polyline);
-        clickedTrack = p.getTrackWrapper();
+        PolylineWrapper pw = polylineWrapperMap.get(polyline);
+//        Toast.makeText(getContext(), pw.getTrackWrapper().getTitle(), Toast.LENGTH_SHORT).show();
+        showTooltip(pw);
+        clickedTrack = pw.getTrackWrapper();
     }
 
     @Override
@@ -169,6 +166,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         /*
          * 1. If one of the polylines is currently selected, deselect it by making it thinner
          * 2. Set the clickedTrack to null
+         * 3. If there's a marker visible on the map remove it
          */
         if (clickedTrack != null && polylineWrapperMap != null) {
             for (Map.Entry<Polyline, PolylineWrapper> e : polylineWrapperMap.entrySet()) {
@@ -178,6 +176,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     break;
                 }
             }
+        }
+        if (currentMarker != null) {
+            currentMarker.remove();
+            currentMarker = null;
         }
     }
 
@@ -189,7 +191,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     /**
-     * Schedules a task to update the map every 1s
+     * Schedules a task to update the map every 0.11s
      */
     private void startTimer() {
         timeUpdateService.scheduleWithFixedDelay(new Runnable() {
@@ -277,7 +279,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     private void drawToMap(List<PolylineWrapper> wrappers) {
         /*
-         * 1. Clean previous Polylines from the map and the wrapper hash map
+         * 1. Clean previous Polylines from the map, the wrapper hash map and the marker
          * 2. Iterate over the wrappers
          * 3. Draw each to the map
          * 4. Cache each in the hash map
@@ -320,54 +322,28 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         return polylineColors[hash % polylineColors.length];
     }
 
-    private void showTooltip(Polyline polyline) {
-        if (polyline.getPoints().size() > 3) {
-            float middle = (float) SphericalUtil.computeLength(polyline.getPoints());
-            LatLng tooltipLatLng = extrapolate(polyline.getPoints(), polyline.getPoints().get(0), middle);
-            googleMap.addMarker(new MarkerOptions().position(tooltipLatLng).icon(
-                    BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-            CameraPosition cameraPosition = new CameraPosition.Builder().target(tooltipLatLng).zoom(18).build();
-            googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+    private void showTooltip(PolylineWrapper pw) {
+        /*
+         * 1. Remove the current marker if visible
+         * 2. If there are 2 points calculate the midpoint
+         * 3. If there are more than 2 points, set the middle one to be the midpoint
+         * 4. Show a bubble tooltip in the midpoint with the track cover, title and artist
+         * 5. Keep track of the currently visible marker
+         */
+        if (currentMarker != null) {
+            currentMarker.remove();
         }
-    }
-
-    // https://stackoverflow.com/a/38616162
-    private LatLng extrapolate(List<LatLng> path, LatLng origin, float distance) {
-        LatLng extrapolated = null;
-        if (!PolyUtil.isLocationOnPath(origin, path, false, 1)) {
-            return null;
+        LatLng middle = null;
+        if (pw.getPoints().size() == 2) {
+            middle = SphericalUtil.interpolate(pw.getPoints().get(0), pw.getPoints().get(1), 0.5);
+        } else if (pw.getPoints().size() > 2) {
+            middle = pw.getPoints().get((pw.getPoints().size() / 2) + (pw.getPoints().size() % 2));
         }
-        float accDistance = 0f;
-        boolean foundStart = false;
-        List<LatLng> segment = new ArrayList<>();
-        for (int i = 0; i < path.size() - 1; i++) {
-            LatLng segmentStart = path.get(i);
-            LatLng segmentEnd = path.get(i + 1);
-            segment.clear();
-            segment.add(segmentStart);
-            segment.add(segmentEnd);
-            double currentDistance = 0d;
-            if (!foundStart) {
-                if (PolyUtil.isLocationOnPath(origin, segment, false, 1)) {
-                    foundStart = true;
-                    currentDistance = SphericalUtil.computeDistanceBetween(origin, segmentEnd);
-                    if (currentDistance > distance) {
-                        double heading = SphericalUtil.computeHeading(origin, segmentEnd);
-                        extrapolated = SphericalUtil.computeOffset(origin, distance - accDistance, heading);
-                        break;
-                    }
-                }
-            } else {
-                currentDistance = SphericalUtil.computeDistanceBetween(segmentStart, segmentEnd);
-                if (currentDistance + accDistance > distance) {
-                    double heading = SphericalUtil.computeHeading(segmentStart, segmentEnd);
-                    extrapolated = SphericalUtil.computeOffset(segmentStart, distance - accDistance, heading);
-                    break;
-                }
-            }
-            accDistance += currentDistance;
-        }
-        return extrapolated;
+        currentMarker = googleMap.addMarker(new MarkerOptions().position(middle).icon(
+                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        CameraPosition cameraPosition = new CameraPosition.Builder().target(middle)
+                .zoom(googleMap.getCameraPosition().zoom).build();
+        googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
     private class LocationHandlerConnection implements ServiceConnection {
