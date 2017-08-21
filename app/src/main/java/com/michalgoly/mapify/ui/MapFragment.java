@@ -4,6 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -12,6 +14,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -25,6 +29,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.SphericalUtil;
+import com.google.maps.android.ui.IconGenerator;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
 import com.michalgoly.mapify.model.LocationTrackWrapper;
@@ -32,6 +37,7 @@ import com.michalgoly.mapify.model.PolylineWrapper;
 import com.michalgoly.mapify.model.TrackWrapper;
 import com.michalgoly.mapify.utils.AlertsManager;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -86,7 +92,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             // no-op for now
             // points = getArguments().getParcelableArrayList(KEY_POINTS);
         }
-
     }
 
     @Override
@@ -154,11 +159,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
          * 2. Show a bubble tooltip above the clicked polyline with track artist, track name and cover
          * 3. Keep track of the currently clicked track
          */
-        Log.d(TAG, "POLYLINE: " + polyline + " clicked");
-        PolylineWrapper pw = polylineWrapperMap.get(polyline);
-//        Toast.makeText(getContext(), pw.getTrackWrapper().getTitle(), Toast.LENGTH_SHORT).show();
-        showTooltip(pw);
-        clickedTrack = pw.getTrackWrapper();
+        if (isAdded()) {
+            Log.d(TAG, "POLYLINE: " + polyline + " clicked");
+            PolylineWrapper pw = polylineWrapperMap.get(polyline);
+            showTooltip(pw);
+            clickedTrack = pw.getTrackWrapper();
+        }
     }
 
     @Override
@@ -340,10 +346,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             middle = pw.getPoints().get((pw.getPoints().size() / 2) + (pw.getPoints().size() % 2));
         }
         currentMarker = googleMap.addMarker(new MarkerOptions().position(middle).icon(
-                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                BitmapDescriptorFactory.fromBitmap(getBubbleBitmap(pw))));
         CameraPosition cameraPosition = new CameraPosition.Builder().target(middle)
                 .zoom(googleMap.getCameraPosition().zoom).build();
         googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+    }
+
+    private Bitmap getBubbleBitmap(PolylineWrapper pw) {
+        /*
+         * 1. Get hold of the IconGenerator
+         * 2. Retrieve the layout for the bubble marker
+         * 3. Attempt to retrieve the locally cached cover Drawable
+         * 4. If it exists assign it to the ImageView of the layout
+         * 5. Otherwise use the default android icon
+         * 6. Set the track title and artist as the text of the bubble market and return
+         */
+        IconGenerator generator = new IconGenerator(getContext());
+        View bubbleView = getActivity().getLayoutInflater().inflate(R.layout.bubble_tooltip, null, false);
+        File coverFile = getContext().getFileStreamPath(pw.getTrackWrapper().getId() + ".png");
+        if (coverFile.exists()) {
+            Log.d(TAG, "Cover file found");
+            Drawable cover = Drawable.createFromPath(coverFile.toString());
+            ImageView imageView = (ImageView) bubbleView.findViewById(R.id.bubble_cover);
+            imageView.setImageDrawable(cover);
+        }
+        TextView textView = (TextView) bubbleView.findViewById(R.id.bubble_title);
+        textView.setText(pw.getTrackWrapper().getTitle());
+        textView = (TextView) bubbleView.findViewById(R.id.bubble_artist);
+        textView.setText(pw.getTrackWrapper().getArtists());
+        generator.setContentView(bubbleView);
+        return generator.makeIcon();
     }
 
     private class LocationHandlerConnection implements ServiceConnection {
