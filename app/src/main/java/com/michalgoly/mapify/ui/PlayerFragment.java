@@ -191,30 +191,33 @@ public class PlayerFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
-                        PlaybackState currentPlaybackState = spotifyHandler.getCurrentPlaybackState();
-                        if (currentTrack != null) {
-                            titleTextView.setText(currentTrack.getTitle());
-                            artistsTextView.setText(currentTrack.getArtists());
-                            trackProgressBar.setMax(currentTrack.getDuration().intValue());
-                            setCover(currentTrack);
-                        } else {
-                            titleTextView.setText(getActivity().getString(R.string.ask_user_search));
-                            artistsTextView.setText("");
-                            toolbar.setBackground(null);
-                            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
-                        }
-                        if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
-                            playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
-                            playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
-                        } else {
-                            playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                            playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
-                        }
-                        if (currentPlaybackState != null) {
-                            trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
-                        } else {
-                            trackProgressBar.setProgress(0);
+                        // double isAdded as it's running on a different Thread
+                        if (isAdded()) {
+                            TrackWrapper currentTrack = spotifyHandler.getCurrentTrack();
+                            PlaybackState currentPlaybackState = spotifyHandler.getCurrentPlaybackState();
+                            if (currentTrack != null) {
+                                titleTextView.setText(currentTrack.getTitle());
+                                artistsTextView.setText(currentTrack.getArtists());
+                                trackProgressBar.setMax(currentTrack.getDuration().intValue());
+                                setCover(currentTrack);
+                            } else {
+                                titleTextView.setText(getActivity().getString(R.string.ask_user_search));
+                                artistsTextView.setText("");
+                                toolbar.setBackground(null);
+                                toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.colorPrimary));
+                            }
+                            if (currentTrack != null && currentPlaybackState != null && currentPlaybackState.isPlaying) {
+                                playPauseImageView.setImageResource(R.drawable.ic_pause_black_24dp);
+                                playPauseImageView.setTag(R.drawable.ic_pause_black_24dp);
+                            } else {
+                                playPauseImageView.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                                playPauseImageView.setTag(R.drawable.ic_play_arrow_black_24dp);
+                            }
+                            if (currentPlaybackState != null) {
+                                trackProgressBar.setProgress((int) currentPlaybackState.positionMs);
+                            } else {
+                                trackProgressBar.setProgress(0);
+                            }
                         }
                     }
                 });
