@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -137,9 +138,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         this.googleMap.setOnMapClickListener(this);
         try {
             this.googleMap.setMyLocationEnabled(true);
-            LatLng currentLocation = new LatLng(locationHandler.getCurrentLocation().getLatitude(),
-                    locationHandler.getCurrentLocation().getLongitude());
-            this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
+            Location currentLocation = locationHandler.getCurrentLocation();
+            if (currentLocation != null) {
+                LatLng currentLatLng = new LatLng(currentLocation.getLatitude(),
+                        currentLocation.getLongitude());
+                this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLng));
+            }
         } catch (SecurityException e) {
             Log.e(TAG, "location was not enabled!", e);
             AlertsManager.alertAndExit(getContext(), "Location was not enabled!");

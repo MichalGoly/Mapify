@@ -71,6 +71,9 @@ public class LocationHandler extends Service {
         return locations;
     }
 
+    /**
+     * @return Location - The current location, or null if not available yet
+     */
     public Location getCurrentLocation() {
         return currentLocation;
     }
