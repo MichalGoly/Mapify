@@ -41,6 +41,7 @@ dependencies {
     compile 'com.spotify.android:auth:1.0.0-alpha'
     compile 'com.miguelcatalan:materialsearchview:1.0.0'
     compile 'com.google.android.gms:play-services-maps:11.0.2'
+    compile 'com.google.maps.android:android-maps-utils:0.5+'
     compile 'com.google.android.gms:play-services-location:11.0.2'
     testCompile 'junit:junit:4.12'
 }

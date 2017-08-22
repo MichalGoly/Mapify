@@ -41,8 +41,7 @@ public class LocationHandler extends Service {
     private static final String TAG = "LocationHandler";
     private static final long UPDATE_INTERVAL_MS = 10_000;
     private static final long FASTEST_UPDATE_INTERVAL_MS = UPDATE_INTERVAL_MS / 2;
-    private static final float SMALLEST_DISPLACEMENT_M = 10;
-    private static final int REQUEST_CHECK_SETTINGS = 0x1;
+    private static final float SMALLEST_DISPLACEMENT_M = 1;
 
     private IBinder binder = new ServiceBinder();
 
@@ -70,6 +69,10 @@ public class LocationHandler extends Service {
 
     public List<LocationTrackWrapper> getLocations() {
         return locations;
+    }
+
+    public Location getCurrentLocation() {
+        return currentLocation;
     }
 
     private void init() {
@@ -131,7 +134,7 @@ public class LocationHandler extends Service {
                         int statusCode = ((ApiException) e).getStatusCode();
                         switch (statusCode) {
                             case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                                AlertsManager.alertAndExit(LocationHandler.this, "Location settings are not satisfied.");
+                                AlertsManager.alertAndExit(LocationHandler.this, "Location settings are not satisfied." + e.toString());
                                 // TODO Attempt to upgrate location settings, rather than killing the app
                                 break;
                             case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
