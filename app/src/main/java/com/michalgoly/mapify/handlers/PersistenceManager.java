@@ -3,6 +3,8 @@ package com.michalgoly.mapify.handlers;
 import com.michalgoly.mapify.model.PolylineWrapper;
 import com.michalgoly.mapify.model.User;
 
+import java.util.List;
+
 /**
  * This interface describes methods necessary for the Mapify persistence layer
  */
@@ -65,5 +67,13 @@ public interface PersistenceManager {
      * @param pw PolylineWrapper - The PolylineWrapper to delete from the persistence layer
      */
     void delete(PolylineWrapper pw);
+
+    /**
+     * Retrieves all PolylineWrappers for the user provided
+     *
+     * @param user User - The user associated with PolylineWrappers
+     * @return List<PolylineWrapper> - The list of PolylineWrappers associated with this user
+     */
+    List<PolylineWrapper> listWrappers(User user);
 
 }

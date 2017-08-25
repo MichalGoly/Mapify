@@ -13,6 +13,10 @@ public class TrackWrapper implements Parcelable {
     private String coverUrl = null;
     private Long duration = null;
 
+    public TrackWrapper() {
+        // empty constructor
+    }
+
     public TrackWrapper(String title, String artists, String id, String coverUrl, Long duration) {
         this.title = title;
         this.artists = artists;
