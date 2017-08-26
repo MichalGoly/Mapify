@@ -5,11 +5,22 @@ import android.os.Parcelable;
 
 import com.spotify.sdk.android.player.Metadata;
 
+import org.greenrobot.greendao.annotation.Entity;
+import org.greenrobot.greendao.annotation.Id;
+import org.greenrobot.greendao.annotation.Keep;
+import org.greenrobot.greendao.annotation.NotNull;
+import org.greenrobot.greendao.annotation.Unique;
+import org.greenrobot.greendao.annotation.Generated;
+
+@Entity
 public class TrackWrapper implements Parcelable {
 
+    @Id
+    @NotNull
+    @Unique
+    private String id = null;
     private String title = null;
     private String artists = null;
-    private String id = null;
     private String coverUrl = null;
     private Long duration = null;
 
@@ -17,6 +28,7 @@ public class TrackWrapper implements Parcelable {
         // empty constructor
     }
 
+    @Keep
     public TrackWrapper(String title, String artists, String id, String coverUrl, Long duration) {
         this.title = title;
         this.artists = artists;

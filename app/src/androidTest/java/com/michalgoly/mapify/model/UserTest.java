@@ -25,8 +25,9 @@ public class UserTest {
         Assert.assertNotNull(context);
         DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(context, DB_NAME_TEST);
         Database db = helper.getWritableDb();
+        DaoMaster.dropAllTables(db, true);
+        DaoMaster.createAllTables(db, true);
         daoSession = new DaoMaster(db).newSession();
-        daoSession.getUserDao().deleteAll();
     }
 
     @Test
@@ -38,4 +39,15 @@ public class UserTest {
         Assert.assertEquals(2, daoSession.getUserDao().count());
     }
 
+    @Test
+    public void testTrackWrapperPersistence() {
+        TrackWrapper tw = new TrackWrapper("Shut up", "Bob", "spotify:12345", "http://sp/dsa/d.png", 5232L);
+        daoSession.getTrackWrapperDao().insert(tw);
+        tw = new TrackWrapper("Hello", "Marry", "spotify:42", null, null);
+        daoSession.getTrackWrapperDao().insert(tw);
+        Assert.assertEquals(2, daoSession.getTrackWrapperDao().count());
+        tw = daoSession.getTrackWrapperDao().load("spotify:12345");
+        Assert.assertNotNull(tw);
+        Assert.assertEquals("Shut up", tw.getTitle());
+    }
 }
