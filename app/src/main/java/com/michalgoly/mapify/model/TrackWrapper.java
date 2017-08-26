@@ -1,29 +1,16 @@
 package com.michalgoly.mapify.model;
 
-import android.arch.persistence.room.ColumnInfo;
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.spotify.sdk.android.player.Metadata;
 
-@Entity
 public class TrackWrapper implements Parcelable {
 
-    @ColumnInfo(name = "title")
     private String title = null;
-
-    @ColumnInfo(name = "artists")
     private String artists = null;
-
-    @PrimaryKey
     private String id = null;
-
-    @ColumnInfo(name = "coverUrl")
     private String coverUrl = null;
-
-    @ColumnInfo(name = "duration")
     private Long duration = null;
 
     public TrackWrapper() {

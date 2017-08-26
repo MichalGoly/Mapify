@@ -1,24 +1,25 @@
 package com.michalgoly.mapify.model;
 
-import android.arch.persistence.room.ColumnInfo;
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.Ignore;
-import android.arch.persistence.room.PrimaryKey;
+import org.greenrobot.greendao.annotation.Entity;
+import org.greenrobot.greendao.annotation.Id;
+import org.greenrobot.greendao.annotation.Keep;
+import org.greenrobot.greendao.annotation.NotNull;
+import org.greenrobot.greendao.annotation.Unique;
 
 @Entity
 public class User {
 
-    @PrimaryKey
+    @Id
+    @NotNull
+    @Unique
     private String id = null;
-
-    @ColumnInfo(name = "name")
     private String name = null;
 
     public User() {
         // emtpy constructor
     }
 
-    @Ignore
+    @Keep
     public User(String id, String name) {
         this.id = id;
         this.name = name;
