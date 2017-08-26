@@ -17,7 +17,7 @@ public class User {
     private String name = null;
 
     public User() {
-        // emtpy constructor
+        // empty constructor
     }
 
     @Keep

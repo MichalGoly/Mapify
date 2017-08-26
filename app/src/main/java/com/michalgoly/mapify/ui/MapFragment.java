@@ -33,6 +33,7 @@ import com.google.maps.android.SphericalUtil;
 import com.google.maps.android.ui.IconGenerator;
 import com.michalgoly.mapify.R;
 import com.michalgoly.mapify.handlers.LocationHandler;
+import com.michalgoly.mapify.model.LatLngWrapper;
 import com.michalgoly.mapify.model.LocationTrackWrapper;
 import com.michalgoly.mapify.model.PolylineWrapper;
 import com.michalgoly.mapify.model.TrackWrapper;
@@ -274,12 +275,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                 if (i + 1 < locations.size()) {
                     if (currentTrack != locations.get(i + 1).getTrackWrapper()) {
                         wrapper.setEndDate(locations.get(i).getDate());
-                        wrapper.setPoints(points);
+                        wrapper.setPoints(LatLngWrapper.toWrapperList(points));
                         polylines.add(wrapper);
                     }
                 } else {
                     wrapper.setEndDate(locations.get(i).getDate());
-                    wrapper.setPoints(points);
+                    wrapper.setPoints(LatLngWrapper.toWrapperList(points));
                     polylines.add(wrapper);
                 }
             }
@@ -304,7 +305,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             if (clickedTrack != null && pw.getTrackWrapper().getId().equals(clickedTrack.getId()))
                 pWidth = POLYLINE_SELECTED_WIDTH;
             Polyline polyline = googleMap.addPolyline(new PolylineOptions()
-                    .addAll(pw.getPoints())
+                    .addAll(LatLngWrapper.fromWrapperList(pw.getPoints()))
                     .color(pw.getColor())
                     .clickable(true)
                     .width(pWidth));
@@ -344,10 +345,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             currentMarker.remove();
         }
         LatLng middle = null;
-        if (pw.getPoints().size() == 2) {
-            middle = SphericalUtil.interpolate(pw.getPoints().get(0), pw.getPoints().get(1), 0.5);
-        } else if (pw.getPoints().size() > 2) {
-            middle = pw.getPoints().get((pw.getPoints().size() / 2) + (pw.getPoints().size() % 2));
+        List<LatLng> points = LatLngWrapper.fromWrapperList(pw.getPoints());
+        if (points.size() == 2) {
+            middle = SphericalUtil.interpolate(points.get(0), points.get(1), 0.5);
+        } else if (points.size() > 2) {
+            middle = points.get((points.size() / 2) + (points.size() % 2));
         }
         currentMarker = googleMap.addMarker(new MarkerOptions().position(middle).icon(
                 BitmapDescriptorFactory.fromBitmap(getBubbleBitmap(pw))));
