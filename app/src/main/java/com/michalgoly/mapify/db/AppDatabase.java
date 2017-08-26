@@ -6,9 +6,10 @@ import android.arch.persistence.room.RoomDatabase;
 import android.content.Context;
 import android.util.Log;
 
+import com.michalgoly.mapify.model.TrackWrapper;
 import com.michalgoly.mapify.model.User;
 
-@Database(entities = {User.class}, version = 1)
+@Database(entities = {User.class, TrackWrapper.class}, version = 2)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String TAG = "AppDatabase";
@@ -17,6 +18,7 @@ public abstract class AppDatabase extends RoomDatabase {
     private static AppDatabase instance = null;
 
     public abstract UserDao userDao();
+    public abstract TrackWrapperDao trackWrapperDao();
 
     public static AppDatabase getInstance(Context context) {
         if (instance == null) {
@@ -24,8 +26,6 @@ public abstract class AppDatabase extends RoomDatabase {
                     .build();
         }
         Log.i(TAG, "Getting instance of the database: " + DB_NAME);
-        System.out.println("Getting instance of the database: " + DB_NAME);
-
         return instance;
     }
 }
