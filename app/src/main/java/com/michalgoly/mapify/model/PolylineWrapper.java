@@ -16,8 +16,7 @@ import org.greenrobot.greendao.DaoException;
 @Entity
 public class PolylineWrapper {
 
-    @Id
-    @NotNull
+    @Id(autoincrement = true)
     @Unique
     private Long id = null;
 
@@ -62,8 +61,8 @@ public class PolylineWrapper {
         this.user = user;
     }
 
-    @Generated(hash = 1711098601)
-    public PolylineWrapper(@NotNull Long id, int color, Date startDate, Date endDate) {
+    @Generated(hash = 224276568)
+    public PolylineWrapper(Long id, int color, Date startDate, Date endDate) {
         this.id = id;
         this.color = color;
         this.startDate = startDate;

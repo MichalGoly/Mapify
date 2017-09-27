@@ -5,4 +5,6 @@
     <string name="alert_dialog_ok">OK</string>
     <string name="ask_user_search">Please search for a song first</string>
     <string name="no_recent_searches">No recent searches found</string>
+    <string name="db_name">mapify-db</string>
+    <string name="db_name_test">mapify-db-test</string>
 </resources>
