@@ -109,8 +109,17 @@ public class PersistenceHandler extends Service implements PersistenceManager {
     }
 
     private void init() {
-        // TODO A different database has to be picked for dev/test/production
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, getString(R.string.db_name));
+        DaoMaster.DevOpenHelper helper = null;
+        if (System.getProperty("IS_TEST") != null) {
+            // test env
+            helper = new DaoMaster.DevOpenHelper(this, getString(R.string.db_name_test));
+        } else if (System.getProperty("IS_PRODUCTION") != null) {
+            // dev env
+            helper = new DaoMaster.DevOpenHelper(this, getString(R.string.db_name));
+        } else {
+            // dev env
+            helper = new DaoMaster.DevOpenHelper(this, getString(R.string.db_name_dev));
+        }
         database = helper.getWritableDb();
         daoSession = new DaoMaster(database).newSession();
     }

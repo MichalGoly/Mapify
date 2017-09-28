@@ -7,4 +7,5 @@
     <string name="no_recent_searches">No recent searches found</string>
     <string name="db_name">mapify-db</string>
     <string name="db_name_test">mapify-db-test</string>
+    <string name="db_name_dev">mapift-db-dev</string>
 </resources>

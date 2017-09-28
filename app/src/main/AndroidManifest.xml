@@ -23,6 +23,7 @@
         </activity>
         <service android:name=".handlers.SpotifyHandler" />
         <service android:name=".handlers.LocationHandler" />
+        <service android:name=".handlers.PersistenceHandler" />
         <activity
             android:name="com.spotify.sdk.android.authentication.LoginActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
